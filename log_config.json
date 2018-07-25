@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "default":{
+          "format": "%(asctime)s:%(levelname)s: %(message)s",
+          "datefmt": "[%m-%d-%Y][%I:%M]"
+        }
+    },
+    "handlers": {
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "default",
+            "filename": "controller.log",
+            "maxBytes": 10485760,
+            "backupCount": 20,
+            "encoding": "utf8"
+        }
+    },
+    "root": {
+        "level": "DEBUG",
+        "handlers": ["file"]
+    }
+}
