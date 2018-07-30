@@ -4,7 +4,7 @@
     "formatters": {
         "default":{
           "format": "%(asctime)s:%(levelname)s: %(message)s",
-          "datefmt": "[%m-%d-%Y][%I:%M]"
+          "datefmt": "[%m-%d-%Y][%H:%M]"
         }
     },
     "handlers": {
@@ -12,7 +12,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "default",
-            "filename": "controller.log",
+            "filename": "log/controller.log",
             "maxBytes": 10485760,
             "backupCount": 20,
             "encoding": "utf8"
