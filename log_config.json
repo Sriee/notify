@@ -18,8 +18,14 @@
             "encoding": "utf8"
         }
     },
+    "loggers": {
+        "main": {
+            "level": "DEBUG",
+            "handlers": ["file"],
+            "propagate": "no"
+        }
+    },
     "root": {
-        "level": "DEBUG",
-        "handlers": ["file"]
+        "level": "INFO"
     }
 }
