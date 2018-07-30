@@ -2,7 +2,9 @@ import os
 import sys
 import subprocess
 import shelve
+import shutil
 import argparse
+import json
 import logging.config
 
 from collections import namedtuple
@@ -27,7 +29,8 @@ class Client(object):
     def start_client(self):
         for i in range(1, self._num_of_clients + 1):
             name, host, port = 'Client-{}'.format(i), '127.0.0.1', self.get_random_port()
-            process = subprocess.Popen([sys.executable, 'client.py', name, host, port])
+            process = subprocess.Popen([sys.executable, 'service/client.py', name, host,
+                                        port])
 
             self._clients[name] = Specification(process.pid, '127.0.0.1', port)
             logger.info('%s started', name)
@@ -50,14 +53,14 @@ class Client(object):
         self._clients.clear()
         logger.debug('Cleared existing client storage.')
 
-        _path = os.path.abspath(os.path.join('..', self._persistent_file_name))
+        _path = os.path.abspath(os.path.join('log', self._persistent_file_name))
         with shelve.open(_path) as rdb:
             self._clients = rdb['clients']
 
         logger.info('Loaded client information.')
 
     def dump_client(self):
-        _path = os.path.abspath(os.path.join('..', self._persistent_file_name))
+        _path = os.path.abspath(os.path.join('log', self._persistent_file_name))
 
         with shelve.open(_path) as wdb:
             wdb['clients'] = self._clients
@@ -76,7 +79,23 @@ class Client(object):
         return 'Client(number_of_clients={}, is_persistent_storage_present={})'\
             .format(self._num_of_clients,
                     os.path.isfile(os.path.abspath(
-                        os.path.join('..', self._persistent_file_name))))
+                        os.path.join('log', self._persistent_file_name))))
+
+
+def setup_logging(default_path='log_config.json', default_level=logging.INFO):
+    """Setup logging configuration"""
+
+    if not os.path.isdir('log'):
+        os.makedirs('log')
+
+    path = default_path
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            config = json.load(f)
+
+        logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(level=default_level)
 
 
 def main(args):
@@ -97,36 +116,7 @@ def main(args):
 
 if __name__ == '__main__':
     # Setup logging
-    logging.config.dictConfig({
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "format": "%(asctime)s:%(levelname)s: %(message)s",
-                "datefmt": "[%m-%d-%Y][%H:%M]"
-            }
-        },
-        "handlers": {
-            "file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "formatter": "default",
-                "filename": os.path.abspath(os.path.join('..', 'controller.log')),
-                "maxBytes": 10485760,
-                "backupCount": 20,
-                "encoding": "utf8"
-            }
-        },
-        "loggers": {
-            "main": {
-                "level": "DEBUG",
-                "handlers": ["file"]
-            }
-        },
-        "root": {
-            "level": "INFO"
-        }
-    }
-    )
+    setup_logging()
 
     cli = argparse.ArgumentParser(description='Start / Stop client processes')
     cli.add_argument('-n', help='Number of clients', default=0)
