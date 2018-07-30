@@ -1,14 +1,11 @@
 import os
-import sys
 import signal
-from threading import Lock
 import asyncio
 import functools
 import json
 import logging.config
 
-logger = logging.getLogger(__name__)
-mutex = Lock()
+logger = logging.getLogger('main')
 
 
 class ControllerService(object):
@@ -35,15 +32,12 @@ class ControllerService(object):
     @terminate.setter
     def terminate(self, value):
         try:
-            mutex.acquire()
             if value is True or value is False:
                 self._terminate = value
             else:
                 raise ValueError()
         except ValueError:
             logger.info('Illegal argument for terminate flag.')
-        finally:
-            mutex.release()
 
 
 def setup_logging(default_path='log_config.json',
