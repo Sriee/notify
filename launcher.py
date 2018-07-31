@@ -2,7 +2,6 @@ import os
 import sys
 import subprocess
 import shelve
-import shutil
 import argparse
 import json
 import logging.config
