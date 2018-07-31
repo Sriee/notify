@@ -13,16 +13,34 @@ logger = logging.getLogger('main')
 
 async def echo_server(reader, writer):
     try:
-        while True:
-            data = await reader.readline()
-            if data:
-                logger.info('Received from client: %s', data.decode())
+        # Receive Hello message from client
+        data = await reader.read(100)
 
-            await asyncio.sleep(5)
+        message = data.decode()
+        logger.info('Received %s from client' % message)
+
+        if message and message.lower() == 'hello':
+            logger.info('Sending hello message back to client.')
+            writer.write('hello'.encode())
+            await writer.drain()
+
+        # Receive Start message from client
+        data = await reader.read(100)
+
+        message = data.decode()
+        logger.info('Received %s from client' % message)
+
+
+        if message and message.lower() == 'start':
+            logger.info('Received start message from client.')
+
+        # Start sending events to client
+        while True:
             data = get_random_server_state()
             logger.info('Sending: %s', data)
             writer.write(data.encode())
             await writer.drain()
+            await asyncio.sleep(5)
 
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
@@ -46,7 +64,8 @@ def exit_handler(sig):
 def main():
     _loop = asyncio.get_event_loop()
     _loop.add_signal_handler(getattr(signal, 'SIGTERM'), functools.partial(exit_handler, signal.SIGTERM))
-    co_routine = asyncio.start_server(echo_server, '127.0.0.1', 1100, loop=_loop)
+    co_routine = asyncio.start_server(echo_server, host='127.0.0.1', port=1200,
+                                      loop=_loop)
     server = _loop.run_until_complete(co_routine)
     try:
         logger.debug('Starting event loop')
@@ -68,7 +87,7 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO):
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = json.load(f)
-        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('..', 'log', 'server.log'))
+        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', 'server.log'))
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
@@ -76,6 +95,6 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO):
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging(default_path=os.path.join('..', 'log_config.json'))
+    setup_logging()
     logger.info('Server pid: %s', os.getpid())
     main()
