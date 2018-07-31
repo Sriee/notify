@@ -18,7 +18,7 @@ async def echo_client(loop):
         logger.info('Waiting for hello message from server')
         data = await reader.readline()
 
-        if data and data.decode().lower() == 'hello':
+        if data and data.decode().rstrip().lower() == 'hello':
             logger.info('Received reply from server. Sending Start...')
 
             writer.write('start\n'.encode())
@@ -27,7 +27,7 @@ async def echo_client(loop):
         while True:
             data = await reader.readline()
             if data:
-                logger.info('Received from server: %s', data.decode())
+                logger.info('Received from server: %s', data.decode().rstrip())
 
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')

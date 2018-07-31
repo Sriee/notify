@@ -16,7 +16,7 @@ async def echo_server(reader, writer):
         # Receive Hello message from client
         data = await reader.readline()
 
-        message = data.decode()
+        message = data.decode().rstrip()
         logger.info('Received %s from client' % message)
 
         if message and message.lower() == 'hello':
@@ -27,7 +27,7 @@ async def echo_server(reader, writer):
         # Receive Start message from client
         data = await reader.readline()
 
-        message = data.decode()
+        message = data.decode().rstrip()
         logger.info('Received %s from client' % message)
 
         if message and message.lower() == 'start':
@@ -36,7 +36,7 @@ async def echo_server(reader, writer):
         # Start sending events to client
         while True:
             data = get_random_server_state()
-            logger.info('Sending: %s', data)
+            logger.info('Sending: %s', data.rstrip())
             writer.write(data.encode())
             await writer.drain()
             await asyncio.sleep(5)
