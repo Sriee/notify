@@ -9,14 +9,26 @@ logger = logging.getLogger('main')
 
 
 async def echo_client(loop):
-    reader, writer = await asyncio.open_connection('127.0.0.1', 1100, loop=loop)
+    reader, writer = await asyncio.open_connection(host='127.0.0.1', port=1200, loop=loop)
     try:
+        logger.info('Sending hello message to server.')
+        writer.write('hello'.encode())
+        await writer.drain()
+
+        logger.info('Waiting for hello message from server')
+        data = await reader.read(100)
+
+        if data and data.decode().lower() == 'hello':
+            logger.info('Received reply from server. Sending Start...')
+
+            writer.write('start'.encode())
+            await writer.drain()
+
         while True:
-            data = await reader.readline()
+            data = await reader.read(100)
             if data:
                 logger.info('Received from server: %s', data.decode())
-                writer.write('Ack! '.format(data))
-                await writer.drain()
+
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
         writer.write_eof()
@@ -54,7 +66,7 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO):
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = json.load(f)
-        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('..', 'log', 'client.log'))
+        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', 'client.log'))
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
@@ -62,6 +74,6 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO):
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging(default_path=os.path.join('..', 'log_config.json'))
+    setup_logging()
     logger.info('Client pid: %s', os.getpid())
     main()
