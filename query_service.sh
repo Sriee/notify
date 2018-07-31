@@ -1,20 +1,27 @@
 #!/bin/sh
 
 workdir=/home/sriee/Git/query
-workdir2=[/]home/sriee/Git/query/venv/bin/python
+server=${workdir}/service/server.py
 venv_home=${workdir}/venv/bin/python
-controller=${workdir}/service/controller.py
 
 start() {
-    cd $workdir
-    $venv_home $controller &
-    echo "Controller Service Started."
+    # cd $workdir
+
+    echo "Starting Server"
+    $venv_home $server &
+
+    echo "Starting Clients"
+    $venv_home launcher.py -n 1 start
 }
 
 stop() {
-    pid=`ps -ef | grep "${workdir2} ${controller}" | awk '{print $2}'`
+    echo "Stopping Server"
+    pid=`ps -ef | grep "${workdir}/venv/bin/[p]ython ${server}" | awk '{print $2}'`
     kill $pid
     sleep 2
+
+    echo "Stopping Clients"
+    $venv_home launcher.py stop
 }
 
 case "$1" in
@@ -29,7 +36,9 @@ case "$1" in
         start
         ;;
     *)
+        echo
         echo "Usage: service/controller.py {start|stop|restart}"
+        echo
         exit 1
 esac
 exit 0
