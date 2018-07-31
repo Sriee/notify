@@ -1,4 +1,5 @@
 venv
+log
 .idea/
 *.log
 .clients.db.*
