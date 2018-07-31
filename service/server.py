@@ -14,22 +14,21 @@ logger = logging.getLogger('main')
 async def echo_server(reader, writer):
     try:
         # Receive Hello message from client
-        data = await reader.read(100)
+        data = await reader.readline()
 
         message = data.decode()
         logger.info('Received %s from client' % message)
 
         if message and message.lower() == 'hello':
             logger.info('Sending hello message back to client.')
-            writer.write('hello'.encode())
+            writer.write('hello\n'.encode())
             await writer.drain()
 
         # Receive Start message from client
-        data = await reader.read(100)
+        data = await reader.readline()
 
         message = data.decode()
         logger.info('Received %s from client' % message)
-
 
         if message and message.lower() == 'start':
             logger.info('Received start message from client.')
@@ -51,7 +50,7 @@ async def echo_server(reader, writer):
 
 def get_random_server_state():
     state = ['ERROR', 'SUSPENDED', 'COMPLETED']
-    return state[randint(0, len(state) - 1)] + '-HIGH' + str(randint(10,18))
+    return state[randint(0, len(state) - 1)] + '-HIGH' + str(randint(10,18)) + '\n'
 
 
 def exit_handler(sig):

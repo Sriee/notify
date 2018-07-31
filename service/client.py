@@ -12,20 +12,20 @@ async def echo_client(loop):
     reader, writer = await asyncio.open_connection(host='127.0.0.1', port=1200, loop=loop)
     try:
         logger.info('Sending hello message to server.')
-        writer.write('hello'.encode())
+        writer.write('hello\n'.encode())
         await writer.drain()
 
         logger.info('Waiting for hello message from server')
-        data = await reader.read(100)
+        data = await reader.readline()
 
         if data and data.decode().lower() == 'hello':
             logger.info('Received reply from server. Sending Start...')
 
-            writer.write('start'.encode())
+            writer.write('start\n'.encode())
             await writer.drain()
 
         while True:
-            data = await reader.read(100)
+            data = await reader.readline()
             if data:
                 logger.info('Received from server: %s', data.decode())
 
