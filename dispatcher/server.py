@@ -1,39 +1,81 @@
 import os
+import asyncio
+import signal
+import json
+import functools
 import logging.config
-from collections import namedtuple
 
-Client = namedtuple('Client', 'name host port')
+from random import randint
+
+
 logger = logging.getLogger('main')
 
+
+async def echo_server(reader, writer):
+    try:
+        while True:
+            data = await reader.readline()
+            if data:
+                logger.info('Received from client: %s', data.decode())
+
+            await asyncio.sleep(5)
+            data = get_random_server_state()
+            logger.info('Sending: %s', data)
+            writer.write(data.encode())
+            await writer.drain()
+
+    except asyncio.CancelledError:
+        logger.debug('Stopping Co-routine')
+        writer.write_eof()
+    finally:
+        writer.close()
+
+
+def get_random_server_state():
+    state = ['ERROR', 'SUSPENDED', 'COMPLETED']
+    return state[randint(0, len(state) - 1)] + '-HIGH' + str(randint(10,18))
+
+
+def exit_handler(sig):
+    logger.debug('Received signal %s' % sig)
+    loop = asyncio.get_event_loop()
+    loop.stop()
+    loop.remove_signal_handler(signal.SIGTERM)
+
+
 def main():
-    pass
+    _loop = asyncio.get_event_loop()
+    _loop.add_signal_handler(getattr(signal, 'SIGTERM'), functools.partial(exit_handler, signal.SIGTERM))
+    co_routine = asyncio.start_server(echo_server, '127.0.0.1', 1100, loop=_loop)
+    server = _loop.run_until_complete(co_routine)
+    try:
+        logger.debug('Starting event loop')
+        _loop.run_forever()
+    finally:
+        logger.debug('Event loop terminated.')
+        server.close()
+        tasks = asyncio.Task.all_tasks()
+        group = asyncio.gather(*tasks, return_exceptions=True)
+        group.cancel()
+        _loop.run_until_complete(group)
+        _loop.close()
+
+
+def setup_logging(default_path='log_config.json', default_level=logging.INFO):
+    """Setup logging configuration"""
+
+    path = default_path
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            config = json.load(f)
+        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('..', 'log', 'server.log'))
+        logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(level=default_level)
+
 
 if __name__ == '__main__':
     # Setup logging
-    logging.config.dictConfig({
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "format": "%(asctime)s:%(levelname)s: %(message)s",
-                "datefmt": "[%m-%d-%Y][%I:%M]"
-            }
-        },
-        "handlers": {
-            "file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "formatter": "default",
-                "filename": os.path.abspath(os.path.join('..', 'controller.log')),
-                "maxBytes": 10485760,
-                "backupCount": 20,
-                "encoding": "utf8"
-            }
-        },
-        "root": {
-            "level": "DEBUG",
-            "handlers": ["file"]
-        }
-    }
-    )
-    logger.debug('pid: %s' % os.getpid())
+    setup_logging(default_path=os.path.join('..', 'log_config.json'))
+    logger.info('Server pid: %s', os.getpid())
     main()
