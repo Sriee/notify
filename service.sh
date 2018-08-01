@@ -11,7 +11,7 @@ start() {
     $venv_home $server &
 
     echo "Starting Clients"
-    $venv_home launcher.py -n 1 start
+    $venv_home launcher.py -n 5 start
 }
 
 stop() {

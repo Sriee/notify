@@ -68,7 +68,7 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO):
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = json.load(f)
-        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', 'client.log'))
+        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', sys.argv[1] + '.log'))
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
