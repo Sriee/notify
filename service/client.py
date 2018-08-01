@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import signal
 import json
@@ -10,6 +11,7 @@ logger = logging.getLogger('main')
 
 async def echo_client(loop):
     reader, writer = await asyncio.open_connection(host='127.0.0.1', port=1200, loop=loop)
+    logger.debug('%s @%s', sys.argv[1], writer.transport.get_extra_info('sockname'))
     try:
         logger.info('Sending hello message to server.')
         writer.write('hello\n'.encode())

@@ -12,6 +12,8 @@ logger = logging.getLogger('main')
 
 
 async def echo_server(reader, writer):
+    peer = writer.transport.get_extra_info('peername')
+    logger.info('I am connected to %s', (peer,))
     try:
         # Receive Hello message from client
         data = await reader.readline()
@@ -44,7 +46,10 @@ async def echo_server(reader, writer):
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
         writer.write_eof()
+    except asyncio.streams.IncompleteReadError:
+        logger.debug('Remote %s disconnected.', (peer,))
     finally:
+        logger.debug('Remote %s closed.', (peer,))
         writer.close()
 
 
