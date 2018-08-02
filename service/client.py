@@ -1,81 +1,100 @@
-import os
-import sys
-import asyncio
-import signal
-import json
-import functools
-import logging.config
+import socket
+import argparse
+from .helper import *
 
 logger = logging.getLogger('main')
 
 
-async def echo_client(loop):
-    reader, writer = await asyncio.open_connection(host='127.0.0.1', port=1200, loop=loop)
-    logger.debug('%s @%s', sys.argv[1], writer.transport.get_extra_info('sockname'))
-    try:
-        logger.info('Sending hello message to server.')
-        writer.write('hello\n'.encode())
-        await writer.drain()
+class Client(object):
 
-        logger.info('Waiting for hello message from server')
-        data = await reader.readline()
+    def __init__(self, name, host, port, subscription):
+        self._name = name
+        self._host = host
+        self._port = port
+        self._subscription = subscription
 
-        if data and data.decode().rstrip().lower() == 'hello':
-            logger.info('Received reply from server. Sending Start...')
+    @property
+    def name(self):
+        return self._name
 
-            writer.write('start\n'.encode())
-            await writer.drain()
+    @property
+    def host(self):
+        return self._host
 
-        while True:
-            data = await reader.readline()
-            if data:
-                logger.info('Received from server: %s', data.decode().rstrip())
+    @property
+    def port(self):
+        return self._port
 
-    except asyncio.CancelledError:
-        logger.debug('Stopping Co-routine')
-        writer.write_eof()
-    finally:
-        writer.close()
+    @property
+    def subscription(self):
+        return self._subscription
 
+    async def listener(self, loop):
+        reader, writer = await asyncio.open_connection(host=self.host, port=self.port, loop=loop)
+        logger.debug('%s @%s', self.name, writer.transport.get_extra_info('sockname'))
 
-def exit_handler(sig):
-    logger.debug('Received signal %s' % sig)
-    loop = asyncio.get_event_loop()
-    loop.stop()
-    loop.remove_signal_handler(signal.SIGTERM)
+        try:
+            # Handshake between server and client
+            logger.info('Sending client_name hello message to server.')
+            await send_msg(writer, self.name + ' hello')
 
+            logger.info('Waiting for hello message from server')
+            message = await read_msg(reader)
 
-def main():
-    _loop = asyncio.get_event_loop()
-    _loop.add_signal_handler(getattr(signal, 'SIGTERM'), functools.partial(exit_handler, signal.SIGTERM))
-    _loop.create_task(echo_client(_loop))
-    try:
-        logger.debug('Starting client event loop')
-        _loop.run_forever()
-    finally:
-        logger.debug('Event loop terminated.')
-        tasks = asyncio.Task.all_tasks()
-        group = asyncio.gather(*tasks, return_exceptions=True)
-        group.cancel()
-        _loop.run_until_complete(group)
-        _loop.close()
+            if message and message.lower() == 'hello':
+                logger.info('Received reply from server. Sending Subscription...')
+                await send_msg(writer, self.subscription[0])
 
+            while True:
+                data = read_msg(reader)
+                if data:
+                    logger.info('Received from server: %s', data)
 
-def setup_logging(default_path='log_config.json', default_level=logging.INFO):
-    """Setup logging configuration"""
+        except asyncio.CancelledError:
+            logger.debug('Stopping Co-routine')
+            writer.write_eof()
+        finally:
+            writer.close()
 
-    path = default_path
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            config = json.load(f)
-        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', sys.argv[1] + '.log'))
-        logging.config.dictConfig(config)
-    else:
-        logging.basicConfig(level=default_level)
+    def run(self):
+        _loop = asyncio.get_event_loop()
+        _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
+        _loop.create_task(self.listener(_loop))
+        try:
+            logger.debug('Starting client event loop')
+            _loop.run_forever()
+        finally:
+            logger.debug('Event loop terminated.')
+            tasks = asyncio.Task.all_tasks()
+            group = asyncio.gather(*tasks, return_exceptions=True)
+            group.cancel()
+            _loop.run_until_complete(group)
+            _loop.close()
+
+    def __str__(self):
+        return 'Client \'{}\' Status:\nConnected to Server: {}@{}\nSubscriptions: {}'\
+            .format(self.name, self.host, self.port, ', '.join(self.subscription))
 
 
 if __name__ == '__main__':
+    cli = argparse.ArgumentParser(description='''
+                                  Client application to receive machine state notification from the server. 
+                                  Client should subscribe to the required states that it requires the notification
+                                  ''')
+    cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
+    cli.add_argument('--port', type=int, help='Port in which server is listening to', default=1200)
+    cli.add_argument('--name', help='Name of the client', default=socket.gethostname())
+    cli.add_argument('--sub', choices=['Pending', 'Imaging', 'Executing', 'Error', 'Completed', 'Suspended'],
+                     nargs='+', default=['Error'], help='Client subscription state')
+    args = cli.parse_args()
+
+    # Client name should be lesser than 15 characters
+    if len(args.name) > 15:
+        args.name = args.name[:16]
+
     # Setup logging
-    setup_logging()
+    setup_logging(log_name=os.path.abspath(os.path.join('log', args.name + '.log')))
     logger.info('Client pid: %s', os.getpid())
-    main()
+    logger.info(args)
+    this = Client(name=args.name, host=args.host, port=args.port, subscription=args.sub)
+    this.run()
