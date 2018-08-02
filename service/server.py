@@ -1,73 +1,93 @@
-import os
-import asyncio
-import signal
-import json
-import functools
-import logging.config
-
+from asyncio import Queue
+from contextlib import suppress
+from collections import defaultdict, deque
 from random import randint
-
+from .helper import *
 
 logger = logging.getLogger('main')
 
+subscriber = defaultdict(deque)     # [k: String, v: Deque]
+send_queue = defaultdict(Queue)     # [k: Writer, v: Queue]
+state_queue = {}                    # [k: String, v: Queue]
 
-async def echo_server(reader, writer):
+
+async def echo_server(reader: StreamReader, writer: StreamWriter):
     peer = writer.transport.get_extra_info('peername')
     logger.info('I am connected to %s', peer)
+
+    # Receive Hello message from client
+    message = await read_msg(reader)
+    logger.info('Received %s from client', message)
+
+    client_name, message = message.split()
+    # Complete handshake with the client
+    if message and message.lower() == 'hello':
+        logger.info('Sending hello message back to client.')
+        await send_msg(writer, 'hello')
+
+    # Receive Subscriber message from client
+    subscribed_state = await read_msg(reader)
+    logger.info('%s subscribed for %s', client_name, subscribed_state)
+
+    # Queue up client to subscriber list
+    subscriber[subscribed_state].append(writer)
+
+    # Create a task to send state info to client
+    loop = asyncio.get_event_loop()
+    send_msg_task = loop.create_task(send_task(writer))
+
+    # Start sending events to client
     try:
-        # Receive Hello message from client
-        data = await reader.readline()
-
-        message = data.decode().rstrip()
-        logger.info('Received %s from client' % message)
-
-        if message and message.lower() == 'hello':
-            logger.info('Sending hello message back to client.')
-            writer.write('hello\n'.encode())
-            await writer.drain()
-
-        # Receive Start message from client
-        data = await reader.readline()
-
-        message = data.decode().rstrip()
-        logger.info('Received %s from client' % message)
-
-        if message and message.lower() == 'start':
-            logger.info('Received start message from client.')
-
-        # Start sending events to client
         while True:
-            data = get_random_server_state()
-            logger.info('Sending: %s', data.rstrip())
-            writer.write(data.encode())
-            await writer.drain()
-            await asyncio.sleep(5)
+            state, machine = get_random_server_state()
 
+            # Create a task for each state
+            if state not in state_queue:
+                state_queue[state] = Queue()
+                loop.create_task(channel(client_name, state))
+
+            await state_queue[state].put(machine)
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
-        writer.write_eof()
     except asyncio.streams.IncompleteReadError:
-        logger.debug('Remote %s disconnected.', peer)
+        logger.debug('%s disconnected.', client_name)
     finally:
-        logger.debug('Remote %s closed.', peer)
-        writer.close()
+        logger.debug('%s closed.', client_name)
+        send_queue[writer].put(None)
+        await send_msg_task
+        del send_queue[writer]
+        subscriber[subscribed_state].remove(writer)
+
+
+async def send_task(writer):
+    while True:
+        with suppress(asyncio.CancelledError):
+            _data = await send_queue[writer].get()
+            if _data is None:
+                writer.write_eof()
+                writer.close()
+                break
+            await send_msg(writer, _data)
+
+
+async def channel(client, state):
+    while True:
+        writers = subscriber[state]
+        msg = await state_queue[state].get()
+        for writer in writers:
+            if not send_queue[writer].full():
+                logger.info('Sending %s-%s to %s', state, msg, client)
+                await send_queue[state].put(msg)
 
 
 def get_random_server_state():
     state = ['ERROR', 'SUSPENDED', 'COMPLETED']
-    return state[randint(0, len(state) - 1)] + '-HIGH' + str(randint(10,18)) + '\n'
-
-
-def exit_handler(sig):
-    logger.debug('Received signal %s' % sig)
-    loop = asyncio.get_event_loop()
-    loop.stop()
-    loop.remove_signal_handler(signal.SIGTERM)
+    return state[randint(0, len(state) - 1)], 'HIGH' + str(randint(10, 18))
 
 
 def main():
     _loop = asyncio.get_event_loop()
-    _loop.add_signal_handler(getattr(signal, 'SIGTERM'), functools.partial(exit_handler, signal.SIGTERM))
+    _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
     co_routine = asyncio.start_server(echo_server, host='127.0.0.1', port=1200,
                                       loop=_loop)
     server = _loop.run_until_complete(co_routine)
@@ -84,21 +104,8 @@ def main():
         _loop.close()
 
 
-def setup_logging(default_path='log_config.json', default_level=logging.INFO):
-    """Setup logging configuration"""
-
-    path = default_path
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            config = json.load(f)
-        config['handlers']['file']['filename'] = os.path.abspath(os.path.join('log', 'server.log'))
-        logging.config.dictConfig(config)
-    else:
-        logging.basicConfig(level=default_level)
-
-
 if __name__ == '__main__':
     # Setup logging
-    setup_logging()
+    setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')))
     logger.info('Server pid: %s', os.getpid())
     main()
