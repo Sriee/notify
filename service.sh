@@ -5,13 +5,22 @@ server=${workdir}/service/server.py
 venv_home=${workdir}/venv/bin/python
 
 start() {
-    # cd $workdir
-
     echo "Starting Server"
     $venv_home $server &
 
-    echo "Starting Clients"
-    $venv_home launcher.py -n 5 start
+    # $venv_home launcher.py -n 5 start
+    sleep 5
+    echo "Starting Client 1"
+    $venv_home ${workdir}/service/client.py --name Client-1 --sub Pending &
+
+    sleep 5
+    echo "Starting Client 2"
+    $venv_home ${workdir}/service/client.py --name Client-2 --sub Error &
+
+    sleep 5
+    echo "Starting Client 3"
+    $venv_home ${workdir}/service/client.py --name Client-3 --sub Suspended &
+
 }
 
 stop() {
@@ -36,7 +45,7 @@ case "$1" in
         ;;
     *)
         echo
-        echo "Usage: service/controller.py { start | stop | restart }"
+        echo "Usage: ./service.sh { start | stop | restart }"
         echo
         exit 1
 esac
