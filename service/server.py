@@ -39,10 +39,11 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     try:
         while True:
             state, machine = get_random_server_state()
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
             # Create a task for each state
             if state not in state_queue:
                 state_queue[state] = Queue(25)
+                logger.info('Creating channel \'%s\' for %s', state, client_name)
                 loop.create_task(channel(client_name, state))
 
             await state_queue[state].put(machine)
@@ -66,15 +67,16 @@ async def send_task(writer, que):
                 writer.write_eof()
                 writer.close()
                 break
+            logger.info('Sending data %s', _data)
             await send_msg(writer, _data)
 
 
 async def channel(client, state):
     while True:
         writers = subscriber[state]
-        if not writers:
-            await asyncio.sleep(1)
-            continue
+        # if not writers:
+        #     await asyncio.sleep(1)
+        #     continue
 
         msg = await state_queue[state].get()
 
