@@ -1,6 +1,6 @@
 import socket
 import argparse
-from .helper import *
+from helper import *
 
 logger = logging.getLogger('main')
 
@@ -35,7 +35,7 @@ class Client(object):
 
         try:
             # Handshake between server and client
-            logger.info('Sending client_name hello message to server.')
+            logger.info('Sending %s hello message to server.', self.name)
             await send_msg(writer, self.name + ' hello')
 
             logger.info('Waiting for hello message from server')
@@ -46,7 +46,7 @@ class Client(object):
                 await send_msg(writer, self.subscription[0])
 
             while True:
-                data = read_msg(reader)
+                data = await read_msg(reader)
                 if data:
                     logger.info('Received from server: %s', data)
 
