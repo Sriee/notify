@@ -39,7 +39,7 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     # Create a channel for the subscribed state
     state_queue[subscribed_state] = Queue(25)
     logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
-    loop.create_task(channel(client_name, subscribed_state))
+    channel_task = loop.create_task(channel(client_name, subscribed_state))
 
     try:
         # Start sending events to client
@@ -51,11 +51,16 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     except asyncio.streams.IncompleteReadError:
         logger.debug('%s disconnected.', client_name)
     finally:
-        logger.debug('%s closed.', client_name)
         send_queue[writer].put(None)
         await send_msg_task
+
+        logger.debug('Closing channel for %s.', subscribed_state)
+        state_queue[subscribed_state].put(None)
+        await channel_task
+
         del send_queue[writer]
         subscriber[subscribed_state].remove(writer)
+        logger.debug('%s closed.', client_name)
 
 
 async def send_task(writer, que):
@@ -65,6 +70,7 @@ async def send_task(writer, que):
             if _data is None:
                 writer.write_eof()
                 writer.close()
+                logger.info('Send task terminated.')
                 break
             logger.info('Sending data %s', _data)
             await send_msg(writer, _data)
@@ -72,20 +78,19 @@ async def send_task(writer, que):
 
 async def channel(client, state):
     while True:
-        writers = subscriber[state]
-        # if not writers:
-        #     await asyncio.sleep(1)
-        #     continue
+        with suppress(asyncio.CancelledError):
+            writers = subscriber[state]
 
-        msg = await state_queue[state].get()
+            msg = await state_queue[state].get()
 
-        if not msg:
-            break
+            if not msg:
+               logger.debug('Closing channel for %s.', subscribed_state)
+               break
 
-        for writer in writers:
-            if not send_queue[writer].full():
-                logger.info('Sending %s-%s to %s', state, msg, client)
-                await send_queue[state].put(msg)
+            for writer in writers:
+                if not send_queue[writer].full():
+                    logger.info('Sending %s-%s to %s', state, msg, client)
+                    await send_queue[writer].put(msg)
 
 
 def get_random_machine():
