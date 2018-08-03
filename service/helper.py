@@ -6,7 +6,7 @@ import logging.config
 from asyncio import StreamReader, StreamWriter
 
 
-async def exit_handler():
+def exit_handler():
     loop = asyncio.get_event_loop()
     loop.stop()
     loop.remove_signal_handler(signal.SIGTERM)
