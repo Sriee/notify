@@ -35,18 +35,17 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     loop = asyncio.get_event_loop()
     send_msg_task = loop.create_task(send_task(writer, send_queue[writer]))
     logger.info('%s subscribed for %s', client_name, subscribed_state)
-    # Start sending events to client
-    try:
-        while True:
-            state, machine = get_random_server_state()
-            await asyncio.sleep(15)
-            # Create a task for each state
-            if state not in state_queue:
-                state_queue[state] = Queue(25)
-                logger.info('Creating channel \'%s\' for %s', state, client_name)
-                loop.create_task(channel(client_name, state))
 
-            await state_queue[state].put(machine)
+    # Create a channel for the subscribed state
+    state_queue[subscribed_state] = Queue(25)
+    logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
+    loop.create_task(channel(client_name, subscribed_state))
+
+    try:
+        # Start sending events to client
+        while True:
+            await asyncio.sleep(15)
+            await state_queue[subscribed_state].put(get_random_machine())
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
     except asyncio.streams.IncompleteReadError:
@@ -89,9 +88,9 @@ async def channel(client, state):
                 await send_queue[state].put(msg)
 
 
-def get_random_server_state():
-    state = ['Error', 'Suspended', 'Pending']
-    return state[randint(0, len(state) - 1)], 'HIGH' + str(randint(10, 18))
+def get_random_machine():
+    # state = ['Error', 'Suspended', 'Pending']
+    return 'HIGH' + str(randint(10, 18))
 
 
 def main():
