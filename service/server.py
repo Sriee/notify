@@ -2,7 +2,7 @@ from asyncio import Queue
 from contextlib import suppress
 from collections import defaultdict, deque
 from random import randint
-from .helper import *
+from helper import *
 
 logger = logging.getLogger('main')
 
@@ -27,23 +27,22 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
 
     # Receive Subscriber message from client
     subscribed_state = await read_msg(reader)
-    logger.info('%s subscribed for %s', client_name, subscribed_state)
 
     # Queue up client to subscriber list
     subscriber[subscribed_state].append(writer)
 
     # Create a task to send state info to client
     loop = asyncio.get_event_loop()
-    send_msg_task = loop.create_task(send_task(writer))
-
+    send_msg_task = loop.create_task(send_task(writer, send_queue[writer]))
+    logger.info('%s subscribed for %s', client_name, subscribed_state)
     # Start sending events to client
     try:
         while True:
             state, machine = get_random_server_state()
-
+            await asyncio.sleep(5)
             # Create a task for each state
             if state not in state_queue:
-                state_queue[state] = Queue()
+                state_queue[state] = Queue(25)
                 loop.create_task(channel(client_name, state))
 
             await state_queue[state].put(machine)
@@ -59,10 +58,10 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
         subscriber[subscribed_state].remove(writer)
 
 
-async def send_task(writer):
+async def send_task(writer, que):
     while True:
         with suppress(asyncio.CancelledError):
-            _data = await send_queue[writer].get()
+            _data = await que.get()
             if _data is None:
                 writer.write_eof()
                 writer.close()
@@ -73,7 +72,15 @@ async def send_task(writer):
 async def channel(client, state):
     while True:
         writers = subscriber[state]
+        if not writers:
+            await asyncio.sleep(1)
+            continue
+
         msg = await state_queue[state].get()
+
+        if not msg:
+            break
+
         for writer in writers:
             if not send_queue[writer].full():
                 logger.info('Sending %s-%s to %s', state, msg, client)
@@ -81,7 +88,7 @@ async def channel(client, state):
 
 
 def get_random_server_state():
-    state = ['ERROR', 'SUSPENDED', 'COMPLETED']
+    state = ['Error', 'Suspended', 'Pending']
     return state[randint(0, len(state) - 1)], 'HIGH' + str(randint(10, 18))
 
 
