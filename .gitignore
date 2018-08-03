@@ -3,3 +3,4 @@ log
 .idea/
 *.log
 .clients.db.*
+__pycache__
