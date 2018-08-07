@@ -11,7 +11,7 @@ start() {
     # $venv_home launcher.py -n 5 start
     sleep 5
     echo "Starting Client 1"
-    $venv_home ${workdir}/service/client.py --name Client-1 --sub Pending &
+    $venv_home ${workdir}/service/client.py --name Client-1 --sub Error Suspended &
 
     sleep 5
     echo "Starting Client 2"
@@ -19,7 +19,7 @@ start() {
 
     sleep 5
     echo "Starting Client 3"
-    $venv_home ${workdir}/service/client.py --name Client-3 --sub Suspended &
+    $venv_home ${workdir}/service/client.py --name Client-3 --sub Imaging Completed &
 
 }
 
