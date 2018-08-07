@@ -49,6 +49,7 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
         logger.debug('Stopping Co-routine')
     except asyncio.streams.IncompleteReadError:
         logger.debug('%s disconnected.', client_name)
+
     finally:
         del send_queue[writer]
         subscriber[subscribed_state].remove(writer)
@@ -56,15 +57,18 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
 
 
 async def send_task(writer, que):
-    while True:
-        _data = await que.get()
-        logger.info('Reached here. %s', _data)
-        if _data is None:
-            writer.write_eof()
-            writer.close()
-            logger.info('Send task terminated.')
-            break
-        await send_msg(writer, _data)
+    try:
+        while True:
+            _data = await que.get()
+
+            if _data is None:
+                writer.write_eof()
+                writer.close()
+                logger.info('Send task terminated.')
+                break
+            await send_msg(writer, _data)
+    except asyncio.TimeoutError:
+        logger.info('Client disconnected.')
 
 
 async def channel(client, state):
