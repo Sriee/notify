@@ -33,23 +33,24 @@ class Client(object):
         reader, writer = await asyncio.open_connection(host=self.host, port=self.port,
                                                        loop=loop)
         logger.debug('%s @%s', self.name, writer.transport.get_extra_info('sockname'))
-
+        short = subscription[:2]
         try:
             # Handshake between server and client
-            logger.info('Sending %s hello message to server.', self.name)
+            logger.info('[%s]Sending %s hello message to server.', short, self.name)
             await send_msg(writer, self.name + ' hello')
 
-            logger.info('Waiting for hello message from server')
+            logger.info('[%s]Waiting for hello message from server', short)
             message = await read_msg(reader)
 
             if message and message.lower() == 'hello':
-                logger.info('Received reply from server. Sending Subscription info...')
+                logger.info('[%s]Received reply from server. Sending Subscription '
+                            'info...', short)
                 await send_msg(writer, subscription)
 
             while True:
                 data = await read_msg(reader)
                 if data:
-                    logger.info('Received from server: %s', data)
+                    logger.info('[Server][%s]: %s', subscription, data)
 
         except asyncio.CancelledError:
             logger.debug('Stopping listener for \'%s\'', subscription)
