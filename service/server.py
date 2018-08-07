@@ -46,13 +46,13 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
             await asyncio.sleep(randint(5, 10))
             await state_queue[subscribed_state].put(get_random_machine())
     except asyncio.CancelledError:
-        logger.debug('Stopping Co-routine')
+        logger.debug('Stopping Co-routine for \'[%s] %s\'', subscribed_state, client_name)
     except asyncio.streams.IncompleteReadError:
-        logger.debug('%s disconnected.', client_name)
+        logger.debug('[%s] %s disconnected.', subscribed_state, client_name)
     finally:
         del send_queue[writer]
         subscriber[subscribed_state].remove(writer)
-        logger.debug('%s closed.', client_name)
+        logger.debug('[%s] %s closed.', subscribed_state, client_name)
 
 
 async def send_task(writer, que):
