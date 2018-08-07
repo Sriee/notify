@@ -1,14 +1,13 @@
 from asyncio import Queue
-from contextlib import suppress
 from collections import defaultdict, deque
 from random import randint
 from helper import *
 
 logger = logging.getLogger('main')
 
-subscriber = defaultdict(deque)     # [k: String, v: Deque]
-send_queue = defaultdict(Queue)     # [k: Writer, v: Queue]
-state_queue = {}                    # [k: String, v: Queue]
+subscriber = defaultdict(deque)  # [k: String, v: Deque]
+send_queue = defaultdict(Queue)  # [k: Writer, v: Queue]
+state_queue = {}  # [k: String, v: Queue]
 
 
 async def echo_server(reader: StreamReader, writer: StreamWriter):
@@ -33,31 +32,24 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
 
     # Create a task to send state info to client
     loop = asyncio.get_event_loop()
-    send_msg_task = loop.create_task(send_task(writer, send_queue[writer]))
+    loop.create_task(send_task(writer, send_queue[writer]))
     logger.info('%s subscribed for %s', client_name, subscribed_state)
 
     # Create a channel for the subscribed state
     state_queue[subscribed_state] = Queue(25)
     logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
-    channel_task = loop.create_task(channel(client_name, subscribed_state))
+    loop.create_task(channel(client_name, subscribed_state))
 
     try:
         # Start sending events to client
         while True:
-            await asyncio.sleep(15)
+            await asyncio.sleep(randint(5, 10))
             await state_queue[subscribed_state].put(get_random_machine())
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine')
     except asyncio.streams.IncompleteReadError:
         logger.debug('%s disconnected.', client_name)
     finally:
-        send_queue[writer].put(None)
-        await send_msg_task
-
-        logger.debug('Closing channel for %s.', subscribed_state)
-        state_queue[subscribed_state].put(None)
-        await channel_task
-
         del send_queue[writer]
         subscriber[subscribed_state].remove(writer)
         logger.debug('%s closed.', client_name)
@@ -65,32 +57,29 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
 
 async def send_task(writer, que):
     while True:
-        with suppress(asyncio.CancelledError):
-            _data = await que.get()
-            if _data is None:
-                writer.write_eof()
-                writer.close()
-                logger.info('Send task terminated.')
-                break
-            logger.info('Sending data %s', _data)
-            await send_msg(writer, _data)
+        _data = await que.get()
+        logger.info('Reached here. %s', _data)
+        if _data is None:
+            writer.write_eof()
+            writer.close()
+            logger.info('Send task terminated.')
+            break
+        await send_msg(writer, _data)
 
 
 async def channel(client, state):
     while True:
-        with suppress(asyncio.CancelledError):
-            writers = subscriber[state]
+        writers = subscriber[state]
+        msg = await state_queue[state].get()
 
-            msg = await state_queue[state].get()
+        if msg is None:
+            logger.debug('Closing channel %s for %s.', state, client)
+            break
 
-            if not msg:
-               logger.debug('Closing channel for %s.', subscribed_state)
-               break
-
-            for writer in writers:
-                if not send_queue[writer].full():
-                    logger.info('Sending %s-%s to %s', state, msg, client)
-                    await send_queue[writer].put(msg)
+        for writer in writers:
+            if not send_queue[writer].full():
+                logger.info('Sending %s-%s to %s', state, msg, client)
+                await send_queue[writer].put(msg)
 
 
 def get_random_machine():
