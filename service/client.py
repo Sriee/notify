@@ -1,8 +1,6 @@
 import socket
 import argparse
 from helper import *
-from collections import defaultdict
-from asyncio import Queue
 
 logger = logging.getLogger('main')
 
@@ -14,8 +12,6 @@ class Client(object):
         self._host = host
         self._port = port
         self._subscription = subscription
-        self._listeners = []
-        self._consume_queue = defaultdict(Queue)
 
     @property
     def name(self):
@@ -33,29 +29,7 @@ class Client(object):
     def subscription(self):
         return self._subscription
 
-    @property
-    def num_of_subscription(self):
-        return len(self._subscription)
-
-    async def send_subscriptions(self, writer: StreamWriter):
-        data = ' '.join(self.subscription)
-        data = str(self.num_of_subscription) + ' ' + data
-        writer.write(data.encode())
-        await writer.drain()
-
-    @staticmethod
-    async def receive(sub, queue):
-        logger.info('Receiver listening for \'%s\' state.', sub)
-        while True:
-            msg = queue.get()
-
-            if msg is None:
-                logger.info('Stopping receiver for %', sub)
-                break
-
-            logger.info('Received from server: %s', msg)
-
-    async def listener(self, loop):
+    async def listener(self, loop, subscription):
         reader, writer = await asyncio.open_connection(host=self.host, port=self.port,
                                                        loop=loop)
         logger.debug('%s @%s', self.name, writer.transport.get_extra_info('sockname'))
@@ -70,20 +44,15 @@ class Client(object):
 
             if message and message.lower() == 'hello':
                 logger.info('Received reply from server. Sending Subscription info...')
-                await self.send_subscriptions(writer)
-
-            # Create separate listeners for each subscription
-            for sub in self.subscription:
-                loop.create_task(self.receive(sub, self._consume_queue[sub]))
+                await send_msg(writer, subscription)
 
             while True:
                 data = await read_msg(reader)
                 if data:
-                    state, machine = data.split(' ')
-                    self._consume_queue[state].put(machine)
+                    logger.info('Received from server: %s', data)
 
         except asyncio.CancelledError:
-            logger.debug('Stopping Co-routine')
+            logger.debug('Stopping listener for \'%s\'', subscription)
             writer.write_eof()
         finally:
             writer.close()
@@ -91,7 +60,10 @@ class Client(object):
     def run(self):
         _loop = asyncio.get_event_loop()
         _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
-        _loop.create_task(self.listener(_loop))
+
+        # Create separate listeners for each subscription
+        for sub in self.subscription:
+            _loop.create_task(self.listener(_loop, sub))
         try:
             logger.debug('Starting client event loop')
             _loop.run_forever()
