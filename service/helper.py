@@ -26,7 +26,8 @@ async def send_msg(writer: StreamWriter, data: str):
     await writer.drain()
 
 
-def setup_logging(default_path='log_config.json', default_level=logging.INFO,
+def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'log_config.json')),
+                  default_level=logging.INFO,
                   log_name=None):
     """Setup logging configuration"""
 
