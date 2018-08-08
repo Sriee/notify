@@ -1,8 +1,9 @@
 import os
-import asyncio
 import json
 import signal
+import asyncio
 import logging.config
+
 from asyncio import StreamReader, StreamWriter
 
 
@@ -40,3 +41,13 @@ def setup_logging(default_path='log_config.json', default_level=logging.INFO,
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
+
+
+def get_icon(state):
+    _state = state.lower()
+    if _state == 'error':
+        return 'dialog-error'
+    elif state == 'suspended':
+        return 'dialog-warning'
+    else:
+        return 'dialog-information'
