@@ -1,18 +1,6 @@
 import socket
 import argparse
-from time import sleep
 from helper import *
-
-# Notification framework
-handle_notification = True
-try:
-    import pgi
-
-    pgi.install_as_gi()
-    pgi.require_version('Notify', '0.7')
-    from pgi.repository import Notify
-except ImportError:
-    handle_notification = False
 
 logger = logging.getLogger('main')
 
@@ -63,7 +51,7 @@ class Client(object):
                 data = await read_msg(reader)
                 if data:
                     logger.info('[Server][%s]: %s', subscription, data)
-                    if handle_notification: show(subscription, data)
+                    show(subscription, data)
 
         except asyncio.CancelledError:
             logger.debug('Stopping listener for \'%s\'', subscription)
@@ -94,13 +82,6 @@ class Client(object):
             .format(self.name, self.host, self.port, ', '.join(self.subscription))
 
 
-def show(title, message):
-    notification = Notify.Notification.new(title, message, get_icon(title))
-    notification.show()
-    sleep(3)
-    notification.close()
-
-
 if __name__ == '__main__':
     cli = argparse.ArgumentParser(description='''
                                      Client application to receive machine state 
@@ -127,12 +108,4 @@ if __name__ == '__main__':
     logger.info('Client pid: %s', os.getpid())
     logger.info(args)
     this = Client(name=args.name, host=args.host, port=args.port, subscription=args.sub)
-
-    if handle_notification:
-        Notify.init('Client Notifier')
-
-    logger.info('%s %s notification(s)', this.name,
-                'shows' if handle_notification else 'doesn\'t show')
     this.run()
-    if handle_notification:
-        Notify.uninit()  # Un-initialize notification
