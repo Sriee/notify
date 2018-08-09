@@ -8,9 +8,9 @@ try:
     pgi.install_as_gi()
     pgi.require_version('Notify', '0.7')
     from pgi.repository import Notify
-    linux = True
+    Notify.init('Client Notifier')
 except ImportError:
-    pgi = None
+    pgi, Notify = (None,) * 2
 
 if not pgi:
     try:
@@ -32,7 +32,7 @@ if pgi:
     def show(title, message):
         notification = Notify.Notification.new(title, message, get_icon(title))
         notification.show()
-        sleep(3)
+        sleep(5)
         notification.close()
 elif windows:
 
