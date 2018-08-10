@@ -45,11 +45,20 @@ class Client(object):
         if self._name is None:
             self._name = value
 
+    @property
+    def random_state(self) -> list:
+        temp, rand_states = self._state, []
+        for i in range(randint(1, 3)):
+            idx = randint(0, len(temp) - 1)
+            rand_states.append(temp[idx])
+            del temp[idx]
+        return rand_states
+
     def start_client(self):
         for i in range(1, self._num_of_clients + 1):
             self.name = 'Client-{}'.format(i)
             process = subprocess.Popen([sys.executable, 'service/client.py', '--name', self.name, '--sub']
-                                       + self._state[:randint(0, len(self._state) - 1)])
+                                       + self.random_state)
 
             self._clients[self.name] = Specification(process.pid, self.host, self.port)
             logger.info('%s started', self.name)
