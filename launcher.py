@@ -7,6 +7,7 @@ import json
 import logging.config
 
 from collections import namedtuple
+from random import randint
 
 Specification = namedtuple('Specification', 'pid host port')
 logger = logging.getLogger('main')
@@ -21,6 +22,7 @@ class Client(object):
         self._host = host
         self._port = port
         self._persistent_file_name = '.clients.db'
+        self._state = ['Pending', 'Imaging', 'Executing', 'Error', 'Completed', 'Suspended']
 
     @property
     def num_of_clients(self):
@@ -46,10 +48,10 @@ class Client(object):
     def start_client(self):
         for i in range(1, self._num_of_clients + 1):
             self.name = 'Client-{}'.format(i)
-            process = subprocess.Popen([sys.executable, 'service/client.py', self.name, self.host,
-                                        self.port])
+            process = subprocess.Popen([sys.executable, 'service/client.py', '--name', self.name, '--sub']
+                                       + self._state[:randint(0, len(self._state) - 1)])
 
-            self._clients[self.name] = Specification(process.pid, '127.0.0.1', self.port)
+            self._clients[self.name] = Specification(process.pid, self.host, self.port)
             logger.info('%s started', self.name)
 
     def load_client(self):
