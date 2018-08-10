@@ -26,8 +26,10 @@ async def send(args):
         message = await read_msg(reader)
 
         if message and message.lower() == 'hello':
-            logger.info('Received reply from server. Sending events...')
+            logger.info('Received reply from server. Sending \'trigger\' as subscription')
+            await send_msg(writer, 'trigger')
 
+        logger.debug('Sending events...')
         for i in range(1, args.count + 1):
             state, machine = get_random_state_machine()
             logger.info('[%s]:Sending[%s][%s]', i, state, machine)
@@ -35,6 +37,8 @@ async def send(args):
     except asyncio.CancelledError:
         logger.debug('Stopping trigger')
         writer.write_eof()
+    except (asyncio.streams.IncompleteReadError, ConnectionResetError):
+        logger.debug('Disconnected to Server')
     finally:
         writer.close()
 

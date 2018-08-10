@@ -27,31 +27,36 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     # Receive Subscriber message from client
     subscribed_state = await read_msg(reader)
 
-    # Queue up client to subscriber list
-    subscriber[subscribed_state].append(writer)
+    # Handle Trigger
+    if subscribed_state.lower() == 'trigger':
+        logger.debug('Registering %s', client_name)
+    else:
+        # Queue up client to subscriber list
+        subscriber[subscribed_state].append(writer)
 
-    # Create a task to send state info to client
-    loop = asyncio.get_event_loop()
-    loop.create_task(send_task(writer, send_queue[writer]))
-    logger.info('%s subscribed for %s', client_name, subscribed_state)
+        # Create a task to send state info to client
+        loop = asyncio.get_event_loop()
+        loop.create_task(send_task(writer, send_queue[writer]))
+        logger.info('%s subscribed for %s', client_name, subscribed_state)
 
-    # Create a channel for the subscribed state
-    state_queue[subscribed_state] = Queue(25)
-    logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
-    loop.create_task(channel(client_name, subscribed_state))
+        # Create a channel for the subscribed state
+        state_queue[subscribed_state] = Queue(25)
+        logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
+        loop.create_task(channel(client_name, subscribed_state))
 
     try:
-        # Start sending events to client
+        # Receive events from trigger and send them to client
         while True:
-            await asyncio.sleep(randint(50, 100))
-            await state_queue[subscribed_state].put(get_random_machine())
+            await asyncio.sleep(5)
+            await state_queue[subscribed_state].put(await read_msg(reader))
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine for \'[%s] %s\'', subscribed_state, client_name)
     except asyncio.streams.IncompleteReadError:
         logger.debug('[%s] %s disconnected.', subscribed_state, client_name)
     finally:
-        del send_queue[writer]
-        subscriber[subscribed_state].remove(writer)
+        if subscribed_state.lower() != 'trigger':
+            del send_queue[writer]
+            subscriber[subscribed_state].remove(writer)
         logger.debug('[%s] %s closed.', subscribed_state, client_name)
 
 
