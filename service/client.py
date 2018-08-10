@@ -1,8 +1,12 @@
 import socket
 import argparse
+
+from asyncio import Queue
 from helper import *
 
 logger = logging.getLogger('main')
+
+receive_queue = {}  # [k: String, v: Queue]
 
 
 class Client(object):
@@ -47,12 +51,13 @@ class Client(object):
                             'info...', short)
                 await send_msg(writer, subscription)
 
+            loop.create_task(self.send_notification(subscription))
             while True:
                 data = await read_msg(reader)
                 if data:
                     logger.info('[Server][%s]: %s', subscription, data)
-                    show(subscription, data)
-
+                    # show(subscription, data)
+                    receive_queue[subscription].put(data)
         except asyncio.CancelledError:
             logger.debug('Stopping listener for \'%s\'', subscription)
             writer.write_eof()
@@ -65,6 +70,7 @@ class Client(object):
 
         # Create separate listeners for each subscription
         for sub in self.subscription:
+            receive_queue[sub] = Queue(10)
             _loop.create_task(self.listener(_loop, sub))
         try:
             logger.debug('Starting client event loop')
@@ -76,6 +82,16 @@ class Client(object):
             group.cancel()
             _loop.run_until_complete(group)
             _loop.close()
+
+    @staticmethod
+    async def send_notification(subscription):
+        while True:
+            _msg = await receive_queue[subscription].get()
+            if _msg:
+                await asyncio.sleep(3)
+                show(subscription, _msg)
+            else:
+                logger.error('Send notification received \'None\' for %s', subscription)
 
     def __str__(self):
         return 'Client \'{}\' Status:\nConnected to Server: {}@{}\nSubscriptions: {}' \

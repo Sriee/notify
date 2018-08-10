@@ -7,7 +7,7 @@ logger = logging.getLogger('main')
 
 subscriber = defaultdict(deque)  # [k: String, v: Deque]
 send_queue = defaultdict(Queue)  # [k: Writer, v: Queue]
-state_queue = {}  # [k: String, v: Queue]
+state_queue = {}                 # [k: String, v: Queue]
 
 
 async def echo_server(reader: StreamReader, writer: StreamWriter):
@@ -43,7 +43,7 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     try:
         # Start sending events to client
         while True:
-            await asyncio.sleep(randint(15, 25))
+            await asyncio.sleep(randint(50, 100))
             await state_queue[subscribed_state].put(get_random_machine())
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine for \'[%s] %s\'', subscribed_state, client_name)
