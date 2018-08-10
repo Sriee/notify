@@ -21,6 +21,7 @@ start() {
     echo "Starting Client 3"
     $venv_home ${workdir}/service/client.py --name Client-3 --sub Imaging Completed &
 
+    $venv_home ${workdir}/service/trigger.py &
 }
 
 stop() {

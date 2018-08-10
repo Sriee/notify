@@ -1,6 +1,5 @@
 from asyncio import Queue
 from collections import defaultdict, deque
-from random import randint
 from helper import *
 
 logger = logging.getLogger('main')
@@ -47,8 +46,15 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
     try:
         # Receive events from trigger and send them to client
         while True:
-            await asyncio.sleep(5)
-            await state_queue[subscribed_state].put(await read_msg(reader))
+            _rcv = await read_msg(reader)
+            if not _rcv:
+                logger.debug('Received %s from %s', str(_rcv), client_name)
+                continue
+
+            _state, _machine = _rcv.split(' ')
+            if is_valid_state(_state) and _state in state_queue:
+                await state_queue[_state].put(_machine)
+
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine for \'[%s] %s\'', subscribed_state, client_name)
     except asyncio.streams.IncompleteReadError:
@@ -91,9 +97,8 @@ async def channel(client, state):
                 await send_queue[writer].put(msg)
 
 
-def get_random_machine():
-    # state = ['Error', 'Suspended', 'Pending']
-    return 'HIGH' + str(randint(10, 18))
+def is_valid_state(_st) -> bool:
+    return _st.lower() in ('completed', 'error', 'executing', 'imaging', 'pending', 'suspended')
 
 
 def main():

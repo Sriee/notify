@@ -33,6 +33,8 @@ async def send(args):
         for i in range(1, args.count + 1):
             state, machine = get_random_state_machine()
             logger.info('[%s]:Sending[%s][%s]', i, state, machine)
+
+            sleep(5)
             await send_msg(writer, '{} {}'.format(state, machine))
     except asyncio.CancelledError:
         logger.debug('Stopping trigger')
