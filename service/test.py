@@ -16,10 +16,12 @@ async def store_it():
         rp.close()
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(store_it())
+
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'stop':
+    if sys.argv[1] == 'start':
+        loop.run_until_complete(store_it())
+    elif sys.argv[1] == 'stop':
         print(loop.is_running(), 'stop')
         messages.put(None)
         loop.close()
