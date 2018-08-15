@@ -1,20 +1,21 @@
 import asyncio
 import rpyc
+import janus
 import threading
 from rpyc.utils.server import ThreadedServer
-from asyncio import Queue
-
-queue = Queue(25)
 
 
 class TestService(rpyc.Service):
+    def __init__(self, send_jq):
+        self._send_jq = send_jq
+
     def exposed_put(self, state, machine):
-        queue.put('{} {}'.format(state, machine))
+        self._send_jq.sync_q.put('{} {}'.format(state, machine))
 
 
-async def store_it():
+async def store_it(jq):
     while True:
-        _item = await queue.get()
+        _item = await jq.async_q.get()
 
         if not _item:
             break
@@ -24,17 +25,18 @@ async def store_it():
             wp.flush()
 
 
-def loop_in_thread(loop):
+def loop_in_thread(loop, que):
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(store_it())
+    loop.run_until_complete(store_it(que))
 
 
 if __name__ == '__main__':
-    _loop = asyncio.get_event_loop()
-    athread = threading.Thread(target=loop_in_thread, args=(_loop,))
-    athread.start()
-    print('Am I blocking..')
+    worker_loop = asyncio.get_event_loop()
+    queue = janus.Queue()
 
-    t = ThreadedServer(TestService, port=1500)
+    a_thread = threading.Thread(target=loop_in_thread, args=(worker_loop, queue))
+    a_thread.start()
+
+    t = ThreadedServer(TestService, port=1600)
     t.daeamon = True
     t.start()

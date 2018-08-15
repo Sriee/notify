@@ -8,8 +8,8 @@ if __name__ == '__main__':
     cli.add_argument('--machine', help='machine name')
     args = cli.parse_args()
 
-    conn = rpyc.connect('localhost', port=1500)
+    conn = rpyc.connect('localhost', port=1600)
     if args.state and args.machine:
-        conn.root.put('{} {}', args.state, args.machine)
+        conn.root.put(args.state, args.machine)
     else:
         conn.root.put(None)
