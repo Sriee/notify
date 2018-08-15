@@ -1,29 +1,40 @@
+import asyncio
 import rpyc
+import threading
 from rpyc.utils.server import ThreadedServer
+from asyncio import Queue
+
+queue = Queue(25)
 
 
 class TestService(rpyc.Service):
+    def exposed_put(self, state, machine):
+        queue.put('{} {}'.format(state, machine))
 
-    def __init__(self):
-        self._rp = None
-        self._file = 'temp.txt'
 
-    def on_connect(self, conn):
-        self._rp = open(self._file, 'a')
-        print('Opened File pointer.')
+async def store_it():
+    while True:
+        _item = await queue.get()
 
-    def on_disconnect(self, conn):
-        self._rp.close()
-        print('Closed file pointer.')
+        if not _item:
+            break
 
-    def exposed_put(self, data):
-        self.store_it(data)
+        with open('temp.txt', 'a') as wp:
+            wp.write(_item + '\n')
+            wp.flush()
 
-    def store_it(self, data):
-        self._rp.write(data + '\n')
+
+def loop_in_thread(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(store_it())
 
 
 if __name__ == '__main__':
+    _loop = asyncio.get_event_loop()
+    athread = threading.Thread(target=loop_in_thread, args=(_loop,))
+    athread.start()
+    print('Am I blocking..')
+
     t = ThreadedServer(TestService, port=1500)
     t.daeamon = True
     t.start()
