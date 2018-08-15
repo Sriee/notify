@@ -23,6 +23,7 @@ async def store_it(jq):
         _item = await jq.async_q.get()
 
         if not _item:
+            print('Got None.')
             break
 
         with open('temp.txt', 'a') as wp:
@@ -33,6 +34,7 @@ async def store_it(jq):
 def loop_in_thread(loop, que):
     asyncio.set_event_loop(loop)
     loop.run_until_complete(store_it(que))
+    print('Exiting loop in thread.')
 
 
 if __name__ == '__main__':
@@ -43,6 +45,5 @@ if __name__ == '__main__':
     a_thread.start()
 
     service = classpartial(TriggerService, send_jq=queue)
-    t = ThreadedServer(service, port=1600)
-    t.daeamon = True
-    t.start()
+    ThreadedServer(service, port=1600).start()
+    print('Trigger Service is closed.')

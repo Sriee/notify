@@ -20,7 +20,7 @@ if __name__ == '__main__':
     try:
         conn = rpyc.connect(SERVICE_ADDRESS, port=SERVICE_PORT)
         if args.state and args.machine:
-            conn.root.put(state=args.state, machine=args.machine)
+            conn.root.put(state=args.state[0], machine=args.machine[0])
         else:
             conn.root.put(stop=True)
     finally:
