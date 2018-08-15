@@ -3,14 +3,19 @@ import rpyc
 import janus
 import threading
 from rpyc.utils.server import ThreadedServer
+from rpyc.utils.helpers import classpartial
 
 
-class TestService(rpyc.Service):
+class TriggerService(rpyc.Service):
+
     def __init__(self, send_jq):
         self._send_jq = send_jq
 
-    def exposed_put(self, state, machine):
-        self._send_jq.sync_q.put('{} {}'.format(state, machine))
+    def exposed_put(self, **kwargs):
+        if kwargs.get('stop', None):
+            self._send_jq.sync_q.put(None)
+        else:
+            self._send_jq.sync_q.put('{} {}'.format(kwargs['state'], kwargs['machine']))
 
 
 async def store_it(jq):
@@ -37,6 +42,7 @@ if __name__ == '__main__':
     a_thread = threading.Thread(target=loop_in_thread, args=(worker_loop, queue))
     a_thread.start()
 
-    t = ThreadedServer(TestService, port=1600)
+    service = classpartial(TriggerService, send_jq=queue)
+    t = ThreadedServer(service, port=1600)
     t.daeamon = True
     t.start()
