@@ -1,24 +1,43 @@
-import socket
+import rpyc
+import janus
 import argparse
+import threading
+from rpyc.utils.server import ThreadedServer
+from rpyc.utils.helpers import classpartial
 
-from random import randint
 from helper import *
+
+# Configure service host address and port here
+SERVICE_HOST = 'localhost'
+SERVICE_PORT = 2100
 
 logger = logging.getLogger('main')
 
 
-def get_random_state_machine():
-    state = ['Completed', 'Error', 'Executing', 'Imaging', 'Pending', 'Suspended']
-    return state[randint(0, len(state) - 1)], 'HIGH' + str(randint(10, 18))
+class TriggerService(rpyc.Service):
+
+    def __init__(self, send_jq):
+        self._send_jq = send_jq
+
+    def exposed_put(self, **kwargs):
+        if kwargs.get('stop', None):
+            self._send_jq.sync_q.put(None)
+        else:
+            self._send_jq.sync_q.put('{} {}'.format(kwargs['state'], kwargs['machine']))
 
 
-async def send(args):
-    loop = asyncio.get_event_loop()
+def loop_in_thread(loop, args, que):
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(send(loop, args, que))
+    logger.info('Exiting loop in thread.')
+
+
+async def send(loop, args, jq):
     reader, writer = await asyncio.open_connection(host=args.host, port=args.port,
                                                    loop=loop)
     logger.debug('%s @%s', args.name, writer.transport.get_extra_info('sockname'))
     try:
-        # Handshake between server and client
+        # Handshake between server and trigger
         logger.info('Sending hello message to server.')
         await send_msg(writer, 'Trigger hello')
 
@@ -30,11 +49,14 @@ async def send(args):
             await send_msg(writer, 'trigger')
 
         logger.debug('Sending events...')
-        for i in range(1, args.count + 1):
-            state, machine = get_random_state_machine()
-            logger.info('[%s]:Sending[%s][%s]', i, state, machine)
+        while True:
+            _item = jq.async_q.get()
 
-            sleep(5)
+            if not _item:
+                break
+
+            state, machine = _item.split(' ')
+            logger.info('Sending[%s][%s]', state, machine)
             await send_msg(writer, '{} {}'.format(state, machine))
     except asyncio.CancelledError:
         logger.debug('Stopping trigger')
@@ -42,6 +64,7 @@ async def send(args):
     except (asyncio.streams.IncompleteReadError, ConnectionResetError):
         logger.debug('Disconnected to Server')
     finally:
+        logger.info('Terminating trigger')
         writer.close()
 
 
@@ -51,8 +74,8 @@ if __name__ == '__main__':
     cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
     cli.add_argument('--port', type=int, help='Port in which server is listening to',
                      default=1200)
-    cli.add_argument('--name', help='Name of the client', default=socket.gethostname())
-    cli.add_argument('--num', dest='count', type=int, help='Number of notifications to send', default=100)
+    cli.add_argument('--name', help='Name of the trigger', default='mysql-trigger')
+
     _args = cli.parse_args()
 
     # Client name should be lesser than 15 characters
@@ -64,10 +87,11 @@ if __name__ == '__main__':
     logger.info('Trigger pid: %s', os.getpid())
     logger.info(_args)
 
-    _loop = asyncio.get_event_loop()
-    try:
-        logger.debug('Starting event loop')
-        _loop.run_until_complete(send(_args))
-    finally:
-        logger.debug('Event loop terminated.')
-        _loop.close()
+    sender_loop = asyncio.get_event_loop()
+    queue = janus.Queue()
+
+    a_thread = threading.Thread(target=loop_in_thread, args=(sender_loop, _args, queue))
+    a_thread.start()
+
+    service = classpartial(TriggerService, send_jq=queue)
+    ThreadedServer(SERVICE_HOST, port=SERVICE_PORT).start()
