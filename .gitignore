@@ -4,3 +4,4 @@ log
 *.log
 .clients.db.*
 __pycache__
+*.so
