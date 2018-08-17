@@ -1,4 +1,5 @@
 import argparse
+import os
 
 
 if __name__ == '__main__':
@@ -14,6 +15,6 @@ if __name__ == '__main__':
     cli.add_argument('--stop', action='store_true', help='Stop Trigger RPC service')
 
     args, conn = cli.parse_args(), None
-    with open('temp.txt', 'a') as wp:
+    with open(os.path.abspath(os.path.join(os.path.dirname(__file__), 'temp.txt')), 'a') as wp:
         wp.write('{} {} {}\n'.format(args.state[0], args.machine[0], args.stop))
     
