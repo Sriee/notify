@@ -3,9 +3,9 @@ Query Service for monitoring server machines
 
 ### TODO:
 
-- [ ] Remove unnecessary header in libudf_sys.c
-- [ ] Compile libudf_sys to a shared library
-- [ ] Support shared library creation for windows and linux
-- [ ] Dynamically link libudf to mysqld
-- [ ] Test trigger to call test python function which prints the arguments
-- [ ] Test trigger with full application flow
+- [ ] Not getting the result. syntax of call is correct.
+- [x] Debug udf function. Causing error on mysql trigger
+- [x] Checked trigger. syntax correct
+- [x] Checked function. syntax correct
+- [x] Create make file to create shared library
+- [x] Verified location to place the plugin
