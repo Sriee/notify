@@ -48,7 +48,6 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
         while True:
             _rcv = await read_msg(reader)
             if not _rcv:
-                logger.debug('Received %s from %s', str(_rcv), client_name)
                 continue
 
             _state, _machine = _rcv.split(' ')

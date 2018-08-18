@@ -7,6 +7,8 @@ import logging.config
 from asyncio import StreamReader, StreamWriter
 from time import sleep
 
+linux, windows = (None,) * 2
+
 try:
     import pgi as linux
 
@@ -43,11 +45,14 @@ elif windows:
     def get_icon(state):
         _state = state.lower()
         if _state == 'error':
-            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'error.ico'))
+            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data',
+                                                'error.ico'))
         elif state == 'suspended':
-            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'warning.ico'))
+            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data',
+                                                'warning.ico'))
         else:
-            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'info.ico'))
+            return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data',
+                                                'info.ico'))
 
     def show(title, message):
         toaster = windows.ToastNotifier()
@@ -75,7 +80,8 @@ async def send_msg(writer: StreamWriter, data: str):
     await writer.drain()
 
 
-def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data',
+def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                            '..', 'data',
                                                             'log_config.json')),
                   default_level=logging.INFO,
                   log_name=None):

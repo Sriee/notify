@@ -6,7 +6,7 @@ from helper import *
 
 logger = logging.getLogger('main')
 
-receive_queue = {}  # [k: String, v: Queue]
+receive_queue = Queue(25)
 
 
 class Client(object):
@@ -51,13 +51,13 @@ class Client(object):
                             'info...', short)
                 await send_msg(writer, subscription)
 
-            loop.create_task(send_notification(subscription))
+            loop.create_task(send_notification())
             while True:
                 data = await read_msg(reader)
                 if data:
                     logger.info('[Server][%s]: %s', subscription, data)
                     # show(subscription, data)
-                    receive_queue[subscription].put(data)
+                    await receive_queue.put((subscription, data))
         except asyncio.CancelledError:
             logger.debug('Stopping listener for \'%s\'', subscription)
             writer.write_eof()
@@ -70,8 +70,6 @@ class Client(object):
 
         # Create separate listeners for each subscription
         for sub in self.subscription:
-            receive_queue[sub] = Queue(10)
-            logger.info(', '.join(receive_queue.keys()))
             _loop.create_task(self.listener(_loop, sub))
         try:
             logger.debug('Starting client event loop')
@@ -89,13 +87,16 @@ class Client(object):
             .format(self.name, self.host, self.port, ', '.join(self.subscription))
 
 
-async def send_notification(subscription):
-    while True:
-        _msg = await receive_queue[subscription].get()
-        if _msg:
-            show(subscription, _msg)
-        else:
-            logger.error('Send notification received \'None\' for %s', subscription)
+async def send_notification():
+    try:
+        while True:
+            _msg = await receive_queue.get()
+            if _msg:
+                show(*_msg)
+            else:
+                logger.error('Send notification received \'None\' for %s', _msg[0])
+    except asyncio.CancelledError:
+        logger.debug('Stopping send notification.')
 
 
 if __name__ == '__main__':
