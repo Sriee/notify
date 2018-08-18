@@ -2,35 +2,33 @@
 
 workdir=/home/sriee/Git/query
 server=${workdir}/service/server.py
+trigger=${workdir}/service/trigger.py
 venv_home=${workdir}/venv/bin/python
 
 start() {
     echo "Starting Server"
-    $venv_home $server &
-
-    # $venv_home launcher.py -n 5 start
-    sleep 5
-    echo "Starting Client 1"
-    $venv_home ${workdir}/service/client.py --name Client-1 --sub Error Suspended &
+    ${venv_home} ${server} &
 
     sleep 5
-    echo "Starting Client 2"
-    $venv_home ${workdir}/service/client.py --name Client-2 --sub Error &
+    echo "Starting Client"
+    ${venv_home} launcher.py -n 1 start
 
     sleep 5
-    echo "Starting Client 3"
-    $venv_home ${workdir}/service/client.py --name Client-3 --sub Imaging Completed &
-
-    $venv_home ${workdir}/service/trigger.py &
+    echo "Starting trigger"
+    ${venv_home} ${workdir}/service/trigger.py &
 }
 
 stop() {
     echo "Stopping Clients"
-    $venv_home launcher.py stop
+    ${venv_home} launcher.py stop
 
-    echo "Stopping Server"
     pid=`ps -ef | grep "${workdir}/venv/bin/[p]ython ${server}" | awk '{print $2}'`
-    kill $pid
+    echo "Stopping Server: ${pid}"
+    kill ${pid}
+
+    pid=`ps -ef | grep "${workdir}/venv/bin/[p]ython ${trigger}" | awk '{print $2}'`
+    echo "Stopping trigger: ${pid}"
+    kill ${pid}
 }
 
 case "$1" in
