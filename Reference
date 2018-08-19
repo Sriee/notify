@@ -2,6 +2,10 @@ Reference
 
 MySQL UDF
 
+Should install libmysqlclient-dev for adding plugin
 https://github.com/mysqludf/lib_mysqludf_sys/blob/master/lib_mysqludf_sys.c
 http://crazytechthoughts.blogspot.com/2011/12/call-external-program-from-mysql.html
 https://dev.mysql.com/doc/refman/8.0/en/udf-calling.html
+
+Remove Windows line endings in linux
+-- sed -i 's/\r//g'
