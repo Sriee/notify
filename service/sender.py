@@ -13,7 +13,7 @@ if __name__ == '__main__':
                      choices=['Completed', 'Error', 'Executing', 'Imaging', 'Pending', 'Suspended']
                      )
     cli.add_argument('--machine', nargs=1, help='Machine name',
-                     choices=['As203', 'HIGH16', 'HIGH17', 'HIGH18', 'HIGH19', 'HIGH20', 'HIGH21', 'HIGH5', 'High6',
+                     choices=['As203', 'HIGH16', 'HIGH17', 'HIGH18', 'HIGH19', 'HIGH20', 'HIGH21', 'HIGH5', 'HIGH6',
                               'MID32', 'MID33', 'MID4', 'MID5']
                      )
     cli.add_argument('--stop', action='store_true', help='Stop Trigger RPC service')

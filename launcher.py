@@ -57,10 +57,8 @@ class Client(object):
     def start_client(self):
         for i in range(1, self._num_of_clients + 1):
             self.name, subs = 'Client-{}'.format(i), self.random_state
-            # process = subprocess.Popen([sys.executable, 'service/client.py', '--name',
-            #                             self.name, '--sub'] + subs)
-            self._clients[self.name] = Specification('1234', self.host, self.port,
-                                                     subs)
+            process = subprocess.Popen([sys.executable, 'service/client.py', '--name',
+                                        self.name, '--sub'] + subs)
             logger.info('%s started', self.name)
 
     def load_client(self):

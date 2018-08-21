@@ -1,5 +1,4 @@
--- Create database call perf
-
+-- Create database call perf 
 DROP DATABASE IF EXISTS perf;
 CREATE DATABASE perf;
 USE perf;
@@ -22,18 +21,16 @@ CREATE TABLE watch (
 );
 
 -- Insert initial values into the table
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High11');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High12');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High13');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High14');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High15');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High16');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High17');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High18');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High19');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High20');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High21');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High22');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High23');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High24');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'High25');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'As203');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH16');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH17');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH18');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH19');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH20');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH21');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH5');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'HIGH6');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'MID4');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'MID5');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'MID32');
+INSERT INTO perf_machines(state, name) VALUES('Pending', 'MID33');
