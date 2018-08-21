@@ -7,5 +7,19 @@ https://github.com/mysqludf/lib_mysqludf_sys/blob/master/lib_mysqludf_sys.c
 http://crazytechthoughts.blogspot.com/2011/12/call-external-program-from-mysql.html
 https://dev.mysql.com/doc/refman/8.0/en/udf-calling.html
 
+From Ubuntu 16 version mysql udf calling is restricted by an utility called apparmor.
+Troubleshooting steps:
+
+1. Check if /usr/sbin/mysqld is in enforced mode when you run "apparmor_status". Make
+   sure to run in administrator privileges to see the profiles
+2. You should move mysqld to "complaint mode". To do that you should use aa-complain.
+
+   Note:
+    aa-complain is a part of apparmor utilities. To install apparmor utils Run
+    sudo apt-get install apparmor-utils
+
+3. Use aa-complain /usr/sbin/mysqld to add mysqld profile to complaint mode. Now you
+   should be able to call udf function from mysql
+
 Remove Windows line endings in linux
 -- sed -i 's/\r//g'
