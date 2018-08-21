@@ -10,7 +10,7 @@ FOR EACH ROW
 BEGIN
  DECLARE cmd CHAR(255);
  DECLARE res int(10);
- SET cmd = CONCAT('/home/sriee/Git/query/venv/bin/python ', '/home/sriee/Git/query/service/temp.py ', '--state ', NEW.state, ' --machine ', NEW.name);
+ SET cmd = CONCAT('/home/sriee/Git/query/venv/bin/python ', '/home/sriee/Git/query/service/sender.py ', '--state ', NEW.state, ' --machine ', NEW.name);
  SET res = sys_call(cmd);	
 END;
 %%

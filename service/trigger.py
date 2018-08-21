@@ -50,7 +50,7 @@ async def send(loop, args, jq):
 
         logger.debug('Sending events...')
         while True:
-            _item = jq.async_q.get()
+            _item = await jq.async_q.get()
 
             if not _item:
                 break
@@ -94,4 +94,4 @@ if __name__ == '__main__':
     a_thread.start()
 
     service = classpartial(TriggerService, send_jq=queue)
-    ThreadedServer(SERVICE_HOST, port=SERVICE_PORT).start()
+    ThreadedServer(service, SERVICE_HOST, port=SERVICE_PORT).start()

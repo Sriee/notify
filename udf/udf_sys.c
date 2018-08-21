@@ -31,7 +31,7 @@ bool sys_call_init(UDF_INIT *initid,	UDF_ARGS *args,	char *message) {
 		return 1;
 	}
 
-	return 1;
+	return 0;
 }
 
 void sys_call_deinit(UDF_INIT *initid) {}
