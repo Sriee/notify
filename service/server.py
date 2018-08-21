@@ -121,6 +121,6 @@ def main():
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')))
+    setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')), default_level=logging.DEBUG)
     logger.info('Server pid: %s', os.getpid())
     main()

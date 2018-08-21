@@ -114,6 +114,7 @@ if __name__ == '__main__':
     cli.add_argument('--sub', choices=['Pending', 'Imaging', 'Executing', 'Error',
                                        'Completed', 'Suspended'],
                      nargs='+', default=['Error'], help='Client subscription state')
+    cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
     args = cli.parse_args()
 
     # Client name should be lesser than 15 characters
@@ -121,7 +122,8 @@ if __name__ == '__main__':
         args.name = args.name[:16]
 
     # Setup logging
-    setup_logging(log_name=os.path.abspath(os.path.join('log', args.name + '.log')))
+    setup_logging(log_name=os.path.abspath(os.path.join('log', args.name + '.log')),
+                  default_level=logging.DEBUG if args.verbose else logging.INFO)
     logger.info('Client pid: %s', os.getpid())
     logger.info(args)
     this = Client(name=args.name, host=args.host, port=args.port, subscription=args.sub)

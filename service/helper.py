@@ -83,7 +83,7 @@ async def send_msg(writer: StreamWriter, data: str):
 def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                             '..', 'data',
                                                             'log_config.json')),
-                  default_level=logging.INFO,
+                  default_level=None,
                   log_name=None):
     """Setup logging configuration"""
 
@@ -92,6 +92,7 @@ def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__fi
         with open(path, 'r') as f:
             config = json.load(f)
 
+        config['loggers']['main']['level'] = default_level if default_level else logging.INFO
         if log_name:
             config['handlers']['file']['filename'] = log_name
 
