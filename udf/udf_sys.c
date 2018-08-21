@@ -26,12 +26,12 @@ ulonglong sys_call(UDF_INIT *initid, UDF_ARGS *args, char *is_null, char *error)
 #endif
 
 bool sys_call_init(UDF_INIT *initid,	UDF_ARGS *args,	char *message) {
-	if(args->arg_count == 1 && args->arg_type[0] == STRING_RESULT){
-		return 0;
-	} else {
-		strcpy(message, "Expected exactly one string type parameter");		
+	if(args->arg_count != 1 && args->arg_type[0] != STRING_RESULT){
+	    strcpy(message, "Expected exactly one string type parameter");
 		return 1;
 	}
+
+	return 1;
 }
 
 void sys_call_deinit(UDF_INIT *initid) {}

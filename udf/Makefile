@@ -1,5 +1,13 @@
-install:
-	gcc -Wall -fPIC -I/usr/include/mysql -shared udf_sys.c -o libudf_sys.so
+CC=gcc
+
+CFLAGS=-Wall -fPIC
+
+LDIR=/usr/lib/mysql/plugin
+
+IDIR=-I/usr/include/mysql
+
+all:
+	$(CC) $(CFLAGS) $(IDIR) -shared udf_sys.c -o $(LDIR)/libudf.so
 
 clean:
-	rm *.so
+	rm $(LDIR)/libudf.so
