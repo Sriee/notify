@@ -3,9 +3,9 @@ Query Service for monitoring server machines
 
 ### TODO:
 
-- [ ] Not getting the result. syntax of call is correct.
-- [x] Debug udf function. Causing error on mysql trigger
-- [x] Checked trigger. syntax correct
-- [x] Checked function. syntax correct
-- [x] Create make file to create shared library
-- [x] Verified location to place the plugin
+- [x] Demo 1 - Run service on local host.
+- [x] Add Verbose mode
+- [ ] Demo 2 - Run service on multiple machines
+- [ ] Move sql trigger to examples
+- [ ] Test and profile the project
+- [ ] Add docs and comments 
