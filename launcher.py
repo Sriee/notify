@@ -105,17 +105,19 @@ class Client(object):
         return 'Client(name={}, host={}, port={})'.format(self.name, self.host, self.port)
 
 
-def setup_logging(default_path='log_config.json', default_level=logging.INFO):
+def setup_logging(config_path='log_config.json', default_level=logging.INFO, log_name=None):
     """Setup logging configuration"""
 
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
 
-    path = default_path
+    path = config_path
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = json.load(f)
 
+        if log_name:
+            config['handlers']['file']['filename'] = log_name
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
@@ -137,15 +139,15 @@ def main(args):
         peers.dump_client()
     else:
         peers.load_client()
-        # n = peers.stop_client()
-        # logger.debug('Stopped %s/%s clients successfully.', n, peers.num_of_clients)
+        n = peers.stop_client()
+        logger.debug('Stopped %s/%s clients successfully.', n, peers.num_of_clients)
         print(repr(peers))
 
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                            'data', 'log_config.json')))
+    setup_logging(config_path=os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'log_config.json')),
+                  log_name=os.path.abspath(os.path.join(log_path, 'controller.log')))
 
     cli = argparse.ArgumentParser(description='Start / Stop client processes')
     cli.add_argument('-n', help='Number of clients', type=int, default=0)

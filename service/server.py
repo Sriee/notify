@@ -123,12 +123,6 @@ def main():
 
 
 if __name__ == '__main__':
-
-    log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'log'))
-    # Create a log folder 
-    if not os.path.isdir(log_path):
-        os.makedirs(log_path)
-        
     # Setup logging
     setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')), default_level=logging.DEBUG)
     logger.info('Server pid: %s', os.getpid())

@@ -80,14 +80,18 @@ async def send_msg(writer: StreamWriter, data: str):
     await writer.drain()
 
 
-def setup_logging(default_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
+def setup_logging(config_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                             '..', 'data',
                                                             'log_config.json')),
                   default_level=None,
                   log_name=None):
     """Setup logging configuration"""
+    # Create a log folder
+    log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'log'))
+    if not os.path.isdir(log_path):
+        os.makedirs(log_path)
 
-    path = default_path
+    path = config_path
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = json.load(f)
