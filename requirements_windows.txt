@@ -1,0 +1,6 @@
+janus==0.4.0
+plumbum==1.6.7
+pypiwin32==223
+pywin32==223
+rpyc==4.0.2
+win10toast==0.9

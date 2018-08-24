@@ -102,7 +102,10 @@ def is_valid_state(_st) -> bool:
 
 def main():
     _loop = asyncio.get_event_loop()
-    _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
+    try:
+        _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
+    except NotImplementedError:
+        logger.info('Signal handling ignored in Windows')
     co_routine = asyncio.start_server(echo_server, host='127.0.0.1', port=1200,
                                       loop=_loop)
     server = _loop.run_until_complete(co_routine)
@@ -120,6 +123,12 @@ def main():
 
 
 if __name__ == '__main__':
+
+    log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'log'))
+    # Create a log folder 
+    if not os.path.isdir(log_path):
+        os.makedirs(log_path)
+        
     # Setup logging
     setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')), default_level=logging.DEBUG)
     logger.info('Server pid: %s', os.getpid())
