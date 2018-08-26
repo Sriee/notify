@@ -106,7 +106,8 @@ def is_valid_state(_st) -> bool:
 def main(args):
     _loop = asyncio.get_event_loop()
     try:
-        _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
+        for sig in ('SIGTERM', 'SIGINT'):
+            _loop.add_signal_handler(getattr(signal, sig), exit_handler)
     except NotImplementedError:
         logger.info('Signal handling ignored in Windows')
     co_routine = asyncio.start_server(echo_server, host=args.host, port=args.port,

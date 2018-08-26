@@ -67,7 +67,8 @@ class Client(object):
     def run(self):
         _loop = asyncio.get_event_loop()
         try:
-            _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
+            for sig in ('SIGTERM', 'SIGINT'):
+                _loop.add_signal_handler(getattr(signal, sig), exit_handler)
         except NotImplementedError:
             logger.info('Signal handling ignored in Windows')
         # Create separate listeners for each subscription
