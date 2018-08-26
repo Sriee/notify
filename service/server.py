@@ -1,3 +1,5 @@
+import argparse
+
 from asyncio import Queue
 from collections import defaultdict, deque
 from helper import *
@@ -97,16 +99,17 @@ async def channel(client, state):
 
 
 def is_valid_state(_st) -> bool:
-    return _st.lower() in ('completed', 'error', 'executing', 'imaging', 'pending', 'suspended')
+    return _st.lower() in ('completed', 'error', 'executing', 'imaging', 'pending',
+                           'suspended')
 
 
-def main():
+def main(args):
     _loop = asyncio.get_event_loop()
     try:
         _loop.add_signal_handler(getattr(signal, 'SIGTERM'), exit_handler)
     except NotImplementedError:
         logger.info('Signal handling ignored in Windows')
-    co_routine = asyncio.start_server(echo_server, host='127.0.0.1', port=1200,
+    co_routine = asyncio.start_server(echo_server, host=args.host, port=args.port,
                                       loop=_loop)
     server = _loop.run_until_complete(co_routine)
     try:
@@ -123,7 +126,18 @@ def main():
 
 
 if __name__ == '__main__':
+    cli = argparse.ArgumentParser(description='''Application which communicates 
+    between notification trigger and clients.''')
+    cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
+    cli.add_argument('--port', type=int, help='Port in which server is listening to',
+                     default=1200)
+    cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
+    _args = cli.parse_args()
+
     # Setup logging
-    setup_logging(log_name=os.path.abspath(os.path.join('log', 'server.log')), default_level=logging.DEBUG)
+    setup_logging(log_name=os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                                        'log', 'server.log')),
+                  default_level=logging.DEBUG if _args.verbose else None)
+    logger.info(_args)
     logger.info('Server pid: %s', os.getpid())
-    main()
+    main(_args)

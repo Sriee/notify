@@ -83,8 +83,9 @@ if __name__ == '__main__':
         _args.name = _args.name[:16]
 
     # Setup logging
-    setup_logging(log_name=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'log', 'trigger.log')),
-                  default_level=logging.DEBUG if _args.verbose else logging.INFO)
+    setup_logging(log_name=os.path.abspath(os.path.join(
+        os.path.dirname(__file__), '..', 'log', 'trigger.log')),
+        default_level=logging.DEBUG if _args.verbose else logging.INFO)
     logger.info('Trigger pid: %s', os.getpid())
     logger.info(_args)
 
