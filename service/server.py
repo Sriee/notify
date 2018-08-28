@@ -11,7 +11,19 @@ send_queue = defaultdict(Queue)  # [k: Writer, v: Queue]
 state_queue = {}                 # [k: String, v: Queue]
 
 
-async def echo_server(reader: StreamReader, writer: StreamWriter):
+async def notification_server(reader: StreamReader, writer: StreamWriter):
+    """Notification Server which acts as a publisher
+
+    Receives events from trigger service and sends out event to it publishers
+
+    Args:
+        reader (StreamReader): Reader stream
+        writer (StreamWriter): Writer stream
+
+    Raises:
+        CancelledError - When co-routine task is cancelled
+        IncompleteReadError - When a client is disconnected pre-maturely
+    """
     peer = writer.transport.get_extra_info('peername')
     logger.info('I am connected to %s', peer)
 
@@ -68,6 +80,15 @@ async def echo_server(reader: StreamReader, writer: StreamWriter):
 
 
 async def send_task(writer, que):
+    """Receive data from queue and send this to writer utility
+
+    Args:
+        writer (StreamWriter): Send message to stream writer utility
+        que (Queue): Send queue
+
+    Raises:
+        ConnectionResetError - when client disconnected
+    """
     _data = None
     try:
         while True:
@@ -84,6 +105,12 @@ async def send_task(writer, que):
 
 
 async def channel(client, state):
+    """Receive message from queue and write it to subscription channel
+
+    Args:
+        client (str): Client name
+        state (str): Subscription State
+    """
     while True:
         writers = subscriber[state]
         msg = await state_queue[state].get()
@@ -99,6 +126,15 @@ async def channel(client, state):
 
 
 def is_valid_state(_st) -> bool:
+    """Checks if the subscription state received is valid or not.
+
+    Args:
+        _st (str): Subscription state
+
+    Returns:
+        bool True if received state in subscription list
+             False otherwise
+    """
     for s in subscriptions:
         if s.lower() == _st.lower():
             return True
@@ -106,13 +142,22 @@ def is_valid_state(_st) -> bool:
 
 
 def main(args):
+    """Starts the notification server.
+
+    Args:
+        args (Namespace): command line arguments
+
+    Raises:
+        NotImplementedError - When running on windows operating system
+    """
     _loop = asyncio.get_event_loop()
     try:
+        # Register exit handlers
         for sig in ('SIGTERM', 'SIGINT'):
             _loop.add_signal_handler(getattr(signal, sig), exit_handler)
     except NotImplementedError:
         logger.info('Signal handling ignored in Windows')
-    co_routine = asyncio.start_server(echo_server, host=args.host, port=args.port,
+    co_routine = asyncio.start_server(notification_server, host=args.host, port=args.port,
                                       loop=_loop)
     server = _loop.run_until_complete(co_routine)
     try:

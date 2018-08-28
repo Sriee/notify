@@ -12,6 +12,14 @@ receive_queue = Queue(25)
 class Client(object):
 
     def __init__(self, name, host, port, subscription):
+        """Initialize client object with required parameters
+
+        Args:
+            name (str): Clients name
+            host (str): Host IP Address
+            port (int): Port number
+            subscription (list): List of client subscriptions
+        """
         self._name = name
         self._host = host
         self._port = port
@@ -34,6 +42,12 @@ class Client(object):
         return self._subscription
 
     async def listener(self, loop, subscription):
+        """Create a connection to the server for each subscription
+
+        Args:
+            loop: event loop
+            subscription (str): One of clients subscription
+        """
         reader, writer = await asyncio.open_connection(host=self.host, port=self.port,
                                                        loop=loop)
         logger.debug('%s @%s', self.name, writer.transport.get_extra_info('sockname'))
@@ -56,7 +70,6 @@ class Client(object):
                 data = await read_msg(reader)
                 if data:
                     logger.info('[Server][%s]: %s', subscription, data)
-                    # show(subscription, data)
                     await receive_queue.put((subscription, data))
         except asyncio.CancelledError:
             logger.debug('Stopping listener for \'%s\'', subscription)
@@ -65,12 +78,19 @@ class Client(object):
             writer.close()
 
     def run(self):
+        """Create a listener for each client subscription
+
+        Raises:
+            NotImplementedError - When running on windows operating system
+        """
         _loop = asyncio.get_event_loop()
         try:
+            # Registering exit handler
             for sig in ('SIGTERM', 'SIGINT'):
                 _loop.add_signal_handler(getattr(signal, sig), exit_handler)
         except NotImplementedError:
             logger.info('Signal handling ignored in Windows')
+
         # Create separate listeners for each subscription
         for sub in self.subscription:
             _loop.create_task(self.listener(_loop, sub))
@@ -91,6 +111,12 @@ class Client(object):
 
 
 async def send_notification():
+    """Send data to toast notification
+
+    Retrieves data from queue and send data to toast notification
+    Raises:
+        CancelledError
+    """
     try:
         while True:
             _msg = await receive_queue.get()

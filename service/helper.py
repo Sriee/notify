@@ -72,18 +72,33 @@ for k in subscriptions:
 
 
 def exit_handler():
+    """Exit handler."""
     loop = asyncio.get_event_loop()
     loop.stop()
     loop.remove_signal_handler(signal.SIGTERM)
 
 
 async def read_msg(reader: StreamReader) -> str:
+    """Read message from a socket stream
+
+    Args:
+        reader (StreamReader): StreamReader instance
+
+    Returns:
+        str - Message from the socket stream
+    """
     data = await reader.readline()
     message = data.decode().rstrip()
     return message
 
 
 async def send_msg(writer: StreamWriter, data: str):
+    """Send message across a socket stream
+
+    Args:
+        writer (StreamWriter): Stream Writer instance
+        data (str): Data to write on the stream
+    """
     if not data.endswith('\n'):
         data = data + '\n'
     writer.write(data.encode())
@@ -94,7 +109,13 @@ def setup_logging(config_path=os.path.abspath(os.path.join(
                     os.path.dirname(__file__), '..', 'data', 'log_config.json')),
                   default_level=None,
                   log_name=None):
-    """Setup logging configuration"""
+    """Setup logging configuration
+
+    Args:
+        config_path (str): Path to log configuration file
+        default_level: log level
+        log_name (str): Path to log file name
+    """
     # Create a log folder
     log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'log'))
     if not os.path.isdir(log_path):

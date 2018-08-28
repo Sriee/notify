@@ -20,6 +20,11 @@ class TriggerService(rpyc.Service):
         self._send_jq = send_jq
 
     def exposed_put(self, **kwargs):
+        """Exposed put method
+
+        Args:
+            kwargs args sent from sender program
+        """
         if kwargs.get('stop', None):
             self._send_jq.sync_q.put(None)
         else:
@@ -27,12 +32,31 @@ class TriggerService(rpyc.Service):
 
 
 def loop_in_thread(loop, args, que):
+    """Run event loop in a separate thread.
+
+    Args:
+        loop: event loop
+        args (NameSpace): command line arguments
+        que (Queue): Queue to hold asynchronous events
+    """
     asyncio.set_event_loop(loop)
     loop.run_until_complete(send(loop, args, que))
     logger.info('Exiting loop in thread.')
 
 
 async def send(loop, args, jq):
+    """Trigger service to send events to the notification service
+
+    Args:
+        loop: event loop
+        args (NameSpace): command line arguments
+        jq (Queue): Queue to put the events
+
+    Raises:
+         CancelledError - when cou-routine task cancels
+         IncompleteReadError, ConnectionResetError - When trigger disconnects to the
+         notification service
+    """
     reader, writer = await asyncio.open_connection(host=args.host, port=args.port,
                                                    loop=loop)
     logger.debug('%s @%s', args.name, writer.transport.get_extra_info('sockname'))
@@ -92,6 +116,7 @@ if __name__ == '__main__':
     sender_loop = asyncio.get_event_loop()
     queue = janus.Queue()
 
+    # Runs event loop on a thread
     a_thread = threading.Thread(target=loop_in_thread, args=(sender_loop, _args, queue))
     a_thread.start()
 
