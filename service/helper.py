@@ -7,6 +7,9 @@ import logging.config
 from asyncio import StreamReader, StreamWriter
 from time import sleep
 
+# Configure subscriptions here
+subscriptions = ['Pending', 'Imaging', 'Executing', 'Error', 'Completed', 'Suspended']
+
 linux, windows = (None,) * 2
 
 try:
@@ -60,6 +63,13 @@ elif windows:
 else:
     raise NotImplementedError('Notification module not implemented in this OS')
 
+if subscriptions is None or len(subscriptions) == 0:
+    raise ValueError('Subscriptions not configured.')
+
+for k in subscriptions:
+    if not isinstance(k, str):
+        raise TypeError('Expected \'str\' but got \'{}\''.format(type(k)))
+
 
 def exit_handler():
     loop = asyncio.get_event_loop()
@@ -80,9 +90,8 @@ async def send_msg(writer: StreamWriter, data: str):
     await writer.drain()
 
 
-def setup_logging(config_path=os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                            '..', 'data',
-                                                            'log_config.json')),
+def setup_logging(config_path=os.path.abspath(os.path.join(
+                    os.path.dirname(__file__), '..', 'data', 'log_config.json')),
                   default_level=None,
                   log_name=None):
     """Setup logging configuration"""
@@ -96,7 +105,11 @@ def setup_logging(config_path=os.path.abspath(os.path.join(os.path.dirname(__fil
         with open(path, 'r') as f:
             config = json.load(f)
 
-        config['loggers']['main']['level'] = default_level if default_level else logging.INFO
+        if default_level:
+            config['loggers']['main']['level'] = default_level
+        else:
+            config['loggers']['main']['level'] = logging.INFO
+
         if log_name:
             config['handlers']['file']['filename'] = log_name
 

@@ -99,8 +99,10 @@ async def channel(client, state):
 
 
 def is_valid_state(_st) -> bool:
-    return _st.lower() in ('completed', 'error', 'executing', 'imaging', 'pending',
-                           'suspended')
+    for s in subscriptions:
+        if s.lower() == _st.lower():
+            return True
+    return False
 
 
 def main(args):
