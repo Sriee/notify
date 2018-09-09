@@ -1,5 +1,6 @@
 import socket
 import argparse
+import time
 
 from asyncio import Queue
 from helper import *
@@ -24,6 +25,7 @@ class Client(object):
         self._host = host
         self._port = port
         self._subscription = subscription
+        self._attempts = 6
 
     @property
     def name(self):
@@ -48,10 +50,33 @@ class Client(object):
             loop: event loop
             subscription (str): One of clients subscription
         """
-        reader, writer = await asyncio.open_connection(host=self.host, port=self.port,
-                                                       loop=loop)
-        logger.debug('%s @%s', self.name, writer.transport.get_extra_info('sockname'))
+        global once
         short = subscription[:2]
+
+        # Connecting to Server
+        for i in range(1, self._attempts):
+            try:
+                logger.debug('[%s] Reaching server(attempt=%s)...', short, str(i))
+                reader, writer = await asyncio.open_connection(host=self.host,
+                                                               port=self.port,
+                                                               loop=loop)
+                if reader and writer:
+                    logger.debug('%s @%s', self.name,
+                                 writer.transport.get_extra_info('sockname'))
+                    break
+            except ConnectionRefusedError:
+                time.sleep(10)
+                logger.debug('[%s] Attempt %s failed. Retrying..', short, str(i))
+        else:
+            logger.info('[%s] Could not reach server.', short)
+            # Send error notification only once on connection error
+            if once:
+                once = False
+                show('Error', 'Connection to Server failed.')
+
+            loop.stop()
+            return
+
         try:
             # Handshake between server and client
             logger.info('[%s]Sending %s hello message to server.', short, self.name)
