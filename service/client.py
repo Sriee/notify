@@ -79,7 +79,7 @@ class Client(object):
 
         try:
             # Handshake between server and client
-            logger.info('[%s]Sending %s hello message to server.', short, self.name)
+            logger.info('[%s]Sending hello message to server.', short)
             await send_msg(writer, self.name + ' hello')
 
             logger.info('[%s]Waiting for hello message from server', short)
