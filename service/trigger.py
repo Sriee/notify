@@ -1,4 +1,5 @@
 import rpyc
+import time
 import janus
 import argparse
 import threading
@@ -48,18 +49,37 @@ async def send(loop, args, jq):
     """Trigger service to send events to the notification service
 
     Args:
-        loop: event loop
+        loop: asyncio event loop
         args (NameSpace): command line arguments
         jq (Queue): Queue to put the events
 
     Raises:
-         CancelledError - when cou-routine task cancels
-         IncompleteReadError, ConnectionResetError - When trigger disconnects to the
-         notification service
+        ConnectionRefusedError: when client cannot connect to server
+        CancelledError - when cou-routine task cancels
+        IncompleteReadError, ConnectionResetError - When trigger disconnects to the
+         notification service prematurely
     """
-    reader, writer = await asyncio.open_connection(host=args.host, port=args.port,
-                                                   loop=loop)
-    logger.debug('%s @%s', args.name, writer.transport.get_extra_info('sockname'))
+    # Connecting to Server
+    for i in range(1, 6):
+        try:
+            logger.debug('Reaching server(attempt=%s)...', str(i))
+            reader, writer = await asyncio.open_connection(host=args.host,
+                                                           port=args.port,
+                                                           loop=loop)
+            if reader and writer:
+                logger.debug('%s @%s', args.name,
+                             writer.transport.get_extra_info('sockname'))
+                break
+        except ConnectionRefusedError:
+            time.sleep(10)
+            logger.debug('Attempt %s failed. Retrying..', str(i))
+    else:
+        logger.info('Could not reach server.')
+        # Send error notification only once on connection error
+        show('Error', 'Connection to Server failed.')
+        loop.stop()
+        return
+
     try:
         # Handshake between server and trigger
         logger.info('Sending hello message to server.')
