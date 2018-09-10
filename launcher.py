@@ -46,8 +46,8 @@ class Client(object):
 
     @property
     def random_state(self) -> list:
-        temp, rand_states, = ['Pending', 'Imaging', 'Executing', 'Error', 'Completed',
-                              'Suspended'], []
+        temp, rand_states, =['Pending', 'Configuration', 'Executing', 'Error',
+                             'Completed', 'Suspended'], []
         for i in range(randint(1, 4)):
             idx = randint(0, len(temp) - 1)
             rand_states.append(temp[idx])
