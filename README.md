@@ -44,7 +44,21 @@ buntu Machine. If you are running MySQL on any other environment, please refer M
  
 2. Login to mysql & Initialize it. `source /path/to/project/udf/initialize.sql`
 3. Register UDF function. `source /path/to/project/udf/register_udf.sql`
- 
+
+### Python dependencies
+
+Please install the required python dependencies based on your operating system.
+
+```
+# On Windows
+pip install -r requirements_windows.txt
+
+# On linux
+pip install -r requirements_linux.txt
+```
+
+> It is recommended to create a virtual environment and install python dependencies
+
 ### Start Server
 
 `python service/server.py --host 192.168.1.5 --port 1300 -v &`
