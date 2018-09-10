@@ -29,9 +29,9 @@ async def notification_server(reader: StreamReader, writer: StreamWriter):
 
     # Receive Hello message from client
     message = await read_msg(reader)
-    logger.info('Received %s from client', message)
-
     client_name, message = message.split()
+    logger.info('Received %s from %s', message, client_name)
+
     # Complete handshake with the client
     if message and message.lower() == 'hello':
         logger.info('Sending hello message back to client.')
@@ -40,33 +40,31 @@ async def notification_server(reader: StreamReader, writer: StreamWriter):
     # Receive Subscriber message from client
     subscribed_state = await read_msg(reader)
 
-    # Handle Trigger
-    if subscribed_state.lower() == 'trigger':
-        logger.debug('Registering %s', client_name)
-    else:
-        # Queue up client to subscriber list
-        subscriber[subscribed_state].append(writer)
-
-        # Create a task to send state info to client
-        loop = asyncio.get_event_loop()
-        loop.create_task(send_task(writer, send_queue[writer]))
-        logger.info('%s subscribed for %s', client_name, subscribed_state)
-
-        # Create a channel for the subscribed state
-        state_queue[subscribed_state] = Queue(25)
-        logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
-        loop.create_task(channel(client_name, subscribed_state))
-
     try:
-        # Receive events from trigger and send them to client
-        while True:
-            _rcv = await read_msg(reader)
-            if not _rcv:
-                continue
+        # Handle Trigger
+        if subscribed_state.lower() == 'trigger':
+            logger.info('Registering %s', client_name)
 
-            _state, _machine = _rcv.split(' ')
-            if is_valid_state(_state) and _state in state_queue:
-                await state_queue[_state].put(_machine)
+            # Create a task to receive state info from trigger
+            loop = asyncio.get_event_loop()
+            loop.create_task(trigger_task(reader))
+        else:
+            # Queue up client to subscriber list
+            subscriber[subscribed_state].append(writer)
+
+            # Create a task to send state info to client
+            loop = asyncio.get_event_loop()
+            loop.create_task(send_task(writer, send_queue[writer]))
+            logger.info('%s subscribed for %s', client_name, subscribed_state)
+
+            # Create a channel for the subscribed state
+            state_queue[subscribed_state] = Queue(25)
+            logger.info('Creating channel \'%s\' for %s', subscribed_state, client_name)
+            loop.create_task(channel(client_name, subscribed_state))
+
+        # To keep the notification server running
+        while True:
+            await asyncio.sleep(1.0)
 
     except asyncio.CancelledError:
         logger.debug('Stopping Co-routine for \'[%s] %s\'', subscribed_state, client_name)
@@ -79,15 +77,32 @@ async def notification_server(reader: StreamReader, writer: StreamWriter):
         logger.debug('[%s] %s closed.', subscribed_state, client_name)
 
 
+async def trigger_task(reader):
+    """Receive events from trigger and send them to client
+
+    Args:
+        reader (StreamReader): Reader stream to read messages from trigger
+    """
+
+    while True:
+        _rcv = await read_msg(reader)
+        if not _rcv:
+            continue
+
+        _state, _machine = _rcv.split(' ')
+        if is_valid_state(_state) and _state in state_queue:
+            await state_queue[_state].put(_machine)
+
+
 async def send_task(writer, que):
     """Receive data from queue and send this to writer utility
 
     Args:
-        writer (StreamWriter): Send message to stream writer utility
+        writer (StreamWriter): Writer stream to write the state information
         que (Queue): Send queue
 
     Raises:
-        ConnectionResetError - when client disconnected
+        ConnectionResetError - when client gets disconnected
     """
     _data = None
     try:
