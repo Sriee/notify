@@ -23,4 +23,3 @@ INSERT INTO perf_machines(state, name) VALUES('Pending', 'Machine7');
 INSERT INTO perf_machines(state, name) VALUES('Pending', 'Machine8');
 INSERT INTO perf_machines(state, name) VALUES('Pending', 'Machine9');
 INSERT INTO perf_machines(state, name) VALUES('Pending', 'Machine10');
-INSERT INTO perf_machines(state, name) VALUES('Pending', 'MID33');

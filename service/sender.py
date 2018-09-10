@@ -8,13 +8,16 @@ SERVICE_PORT = 2100
 
 if __name__ == '__main__':
 
-    cli = argparse.ArgumentParser(description='Called by mysql trigger to send events to the server')
+    cli = argparse.ArgumentParser(description='Called by mysql trigger to send events '
+                                              'to the server')
     cli.add_argument('--state', nargs=1, help='Machine State',
-                     choices=['Completed', 'Error', 'Executing', 'Imaging', 'Pending', 'Suspended']
+                     choices=['Pending', 'Configuration', 'Executing', 'Error',
+                              'Completed', 'Suspended']
                      )
     cli.add_argument('--machine', nargs=1, help='Machine name',
-                     choices=['As203', 'HIGH16', 'HIGH17', 'HIGH18', 'HIGH19', 'HIGH20', 'HIGH21', 'HIGH5', 'HIGH6',
-                              'MID32', 'MID33', 'MID4', 'MID5']
+                     choices=['Machine1', 'Machine2', 'Machine3', 'Machine4',
+                              'Machine5', 'Machine6', 'Machine7', 'Machine8',
+                              'Machine9', 'Machine10']
                      )
     cli.add_argument('--stop', action='store_true', help='Stop Trigger RPC service')
 

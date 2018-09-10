@@ -49,6 +49,10 @@ class Client(object):
         Args:
             loop: event loop
             subscription (str): One of clients subscription
+
+        Raises:
+            ConnectionRefusedError: when client cannot connect to server
+            CancelledError: when listener stops
         """
         global once
         short = subscription[:2]
@@ -140,7 +144,7 @@ async def send_notification():
 
     Retrieves data from queue and send data to toast notification
     Raises:
-        CancelledError
+        CancelledError: when listener co-routine stops
     """
     try:
         while True:
@@ -155,19 +159,14 @@ async def send_notification():
 
 if __name__ == '__main__':
     cli = argparse.ArgumentParser(description='''
-                                     Client application to receive machine state 
-                                     notification from the server. 
-                                     Client should subscribe to the required states 
-                                     that it requires the 
-                                     notification
-                                  ''')
+                                     Client application to receive subscription 
+                                     notification from the server.''')
     cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
     cli.add_argument('--port', type=int, help='Port in which server is listening to',
                      default=1200)
     cli.add_argument('--name', help='Name of the client', default=socket.gethostname())
-    cli.add_argument('--sub', choices=['Pending', 'Imaging', 'Executing', 'Error',
-                                       'Completed', 'Suspended'],
-                     nargs='+', default=['Error'], help='Client subscription state')
+    cli.add_argument('--sub', choices=subscriptions, nargs='+', default=['Error'],
+                     help='Client subscription state')
     cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
     args = cli.parse_args()
 

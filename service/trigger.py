@@ -16,6 +16,7 @@ logger = logging.getLogger('main')
 
 
 class TriggerService(rpyc.Service):
+    """RPC Trigger Service"""
 
     def __init__(self, send_jq):
         self._send_jq = send_jq

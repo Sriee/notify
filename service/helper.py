@@ -8,7 +8,8 @@ from asyncio import StreamReader, StreamWriter
 from time import sleep
 
 # Configure subscriptions here
-subscriptions = ['Pending', 'Imaging', 'Executing', 'Error', 'Completed', 'Suspended']
+subscriptions = ['Pending', 'Configuration', 'Executing', 'Error', 'Completed',
+                 'Suspended']
 once = True
 linux, windows = (None,) * 2
 
