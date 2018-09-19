@@ -1,6 +1,7 @@
 import rpyc
 import time
 import janus
+import platform
 import argparse
 import threading
 from rpyc.utils.server import ThreadedServer
@@ -116,9 +117,9 @@ async def send(loop, args, jq):
 if __name__ == '__main__':
     cli = argparse.ArgumentParser(description='''Trigger application which sends random state and machine name to 
                                                  publisher''')
-    cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
+    cli.add_argument('--host', help='Host IP of the server', default=config.server_host)
     cli.add_argument('--port', type=int, help='Port in which server is listening to',
-                     default=1200)
+                     default=config.server_port)
     cli.add_argument('--name', help='Name of the trigger', default='mysql-trigger')
     cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
     _args = cli.parse_args()
@@ -131,6 +132,7 @@ if __name__ == '__main__':
     setup_logging(log_name=os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'log', 'trigger.log')),
         default_level=logging.DEBUG if _args.verbose else logging.INFO)
+    logger.info('%s-%s-%s', platform.system(), platform.version(), platform.machine())
     logger.info('Trigger pid: %s', os.getpid())
     logger.info(_args)
 

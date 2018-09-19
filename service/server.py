@@ -1,4 +1,5 @@
 import argparse
+import platform
 
 from asyncio import Queue
 from collections import defaultdict, deque
@@ -150,7 +151,7 @@ def is_valid_state(_st) -> bool:
         bool True if received state in subscription list
              False otherwise
     """
-    for s in subscriptions:
+    for s in config.subscriptions:
         if s.lower() == _st.lower():
             return True
     return False
@@ -191,9 +192,9 @@ def main(args):
 if __name__ == '__main__':
     cli = argparse.ArgumentParser(description='''Application which communicates 
     between notification trigger and clients.''')
-    cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
+    cli.add_argument('--host', help='Host IP of the server', default=config.server_host)
     cli.add_argument('--port', type=int, help='Port in which server is listening to',
-                     default=1200)
+                     default=config.server_port)
     cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
     _args = cli.parse_args()
 
@@ -201,6 +202,7 @@ if __name__ == '__main__':
     setup_logging(log_name=os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                         'log', 'server.log')),
                   default_level=logging.DEBUG if _args.verbose else None)
+    logger.info('%s-%s-%s', platform.system(), platform.version(), platform.machine())
     logger.info(_args)
     logger.info('Server pid: %s', os.getpid())
     main(_args)

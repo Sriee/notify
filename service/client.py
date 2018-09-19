@@ -1,5 +1,5 @@
-import socket
 import argparse
+import platform
 import time
 
 from asyncio import Queue
@@ -161,11 +161,11 @@ if __name__ == '__main__':
     cli = argparse.ArgumentParser(description='''
                                      Client application to receive subscription 
                                      notification from the server.''')
-    cli.add_argument('--host', help='Host IP of the server', default='127.0.0.1')
+    cli.add_argument('--host', help='Host IP of the server', default=config.server_host)
     cli.add_argument('--port', type=int, help='Port in which server is listening to',
-                     default=1200)
-    cli.add_argument('--name', help='Name of the client', default=socket.gethostname())
-    cli.add_argument('--sub', choices=subscriptions, nargs='+', default=['Error'],
+                     default=config.server_port)
+    cli.add_argument('--name', help='Name of the client', default=config.client_name)
+    cli.add_argument('--sub', choices=config.subscriptions, nargs='+', default=config.client_subscriptions,
                      help='Client subscription state')
     cli.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose mode')
     args = cli.parse_args()
@@ -178,6 +178,7 @@ if __name__ == '__main__':
     setup_logging(log_name=os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                         'log', args.name + '.log')),
                   default_level=logging.DEBUG if args.verbose else logging.INFO)
+    logger.info('%s-%s-%s', platform.system(), platform.version(), platform.machine())
     logger.info('Client pid: %s', os.getpid())
     logger.info(args)
     this = Client(name=args.name, host=args.host, port=args.port, subscription=args.sub)
