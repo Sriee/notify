@@ -76,7 +76,7 @@ class Config(object):
             self._data['server_port'] = self._data.get('server_port', 1200)
             self._data['client_name'] = self._data.get('client_name', socket.gethostname())
             self._data['client_subscriptions'] = self._data.get('client_subscriptions', ['Error'])
-            self._data['subscriptions'] = self._data.get('subscriptions', None)
+            self._data['subscriptions'] = self._data.get('subscriptions', ['Error'])
 
     @property
     def server_host(self):
