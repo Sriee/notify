@@ -1,5 +1,7 @@
 import os
 import json
+import yaml
+import socket
 import signal
 import asyncio
 import logging.config
@@ -7,9 +9,6 @@ import logging.config
 from asyncio import StreamReader, StreamWriter
 from time import sleep
 
-# Configure subscriptions here
-subscriptions = ['Pending', 'Configuration', 'Executing', 'Error', 'Completed',
-                 'Suspended']
 once = True
 linux, windows = (None,) * 2
 
@@ -64,12 +63,51 @@ elif windows:
 else:
     raise NotImplementedError('Notification module not implemented in this OS')
 
-if subscriptions is None or len(subscriptions) == 0:
-    raise ValueError('Subscriptions not configured.')
 
-for k in subscriptions:
-    if not isinstance(k, str):
-        raise TypeError('Expected \'str\' but got \'{}\''.format(type(k)))
+class Config(object):
+    def __init__(self):
+        _yml_path, self._data = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'config.yml')), {}
+        if os.path.exists(_yml_path):
+            with open(_yml_path) as yrp:
+                self._data = yaml.load(yrp)
+
+        if len(self._data) == 0:
+            self._data['server_host'] = self._data.get('server_host', '127.0.0.1')
+            self._data['server_port'] = self._data.get('server_port', 1200)
+            self._data['client_name'] = self._data.get('client_name', socket.gethostname())
+            self._data['client_subscriptions'] = self._data.get('client_subscriptions', ['Error'])
+            self._data['subscriptions'] = self._data.get('subscriptions', None)
+
+    @property
+    def server_host(self):
+        return self._data['server_host']
+
+    @property
+    def server_port(self):
+        return self._data['server_port']
+
+    @property
+    def client_name(self):
+        return self._data['client_name']
+
+    @property
+    def client_subscriptions(self):
+        return self._data['client_subscriptions']
+
+    @property
+    def subscriptions(self):
+        return self._data['subscriptions']
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __getitem__(self, item):
+        if item in self:
+            return self._data[item]
+        raise KeyError('%s' % item)
+
+
+config = Config()
 
 
 def exit_handler():
@@ -125,16 +163,16 @@ def setup_logging(config_path=os.path.abspath(os.path.join(
     path = config_path
     if os.path.exists(path):
         with open(path, 'r') as f:
-            config = json.load(f)
+            lg_config = json.load(f)
 
         if default_level:
-            config['loggers']['main']['level'] = default_level
+            lg_config['loggers']['main']['level'] = default_level
         else:
-            config['loggers']['main']['level'] = logging.INFO
+            lg_config['loggers']['main']['level'] = logging.INFO
 
         if log_name:
-            config['handlers']['file']['filename'] = log_name
+            lg_config['handlers']['file']['filename'] = log_name
 
-        logging.config.dictConfig(config)
+        logging.config.dictConfig(lg_config)
     else:
         logging.basicConfig(level=default_level)
